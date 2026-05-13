@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+.navbar {
+  margin-top: 20px;
+  background: #ffffff18;
+}
