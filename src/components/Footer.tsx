@@ -4,16 +4,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
 
-const colors = {
-    text: '#1A1C1E',
-    textSecondary: '#44474E',
-    borderLight: 'rgba(0, 0, 0, 0.1)',
-};
-
-const typography = {
-    headline: '"Playfair Display", serif',
-    ui: '"Inter", sans-serif',
-};
+import { colors, typography } from '../theme';
 
 const FooterLink = styled(Link)({
     color: colors.textSecondary,

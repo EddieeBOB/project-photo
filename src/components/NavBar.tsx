@@ -14,19 +14,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 
-// Extracted from AltDesign.md (Luminous Editorial)
-const colors = {
-    surface: 'rgba(249, 249, 249, 0.8)', // bg-surface/80
-    primary: '#000000',
-    onPrimary: '#ffffff',
-    borderLight: 'rgba(0, 0, 0, 0.1)', // Outline Variant
-    text: '#1A1C1E',
-};
-
-const typography = {
-    headline: '"Playfair Display", serif',
-    ui: '"Inter", sans-serif',
-};
+import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 
 const StyledToolbar = styled(Toolbar)({
     display: 'flex',
@@ -36,7 +24,7 @@ const StyledToolbar = styled(Toolbar)({
     borderRadius: '0px',
     backdropFilter: 'blur(24px)', // backdrop-blur-xl
     border: `1px solid ${colors.borderLight}`,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceTransparent,
     padding: '12px 24px',
 });
 
@@ -69,45 +57,6 @@ const NavButton = styled(Button)({
         '&::after': {
             width: '100%',
         }
-    }
-});
-
-const PrimaryButton = styled(Button)({
-    borderRadius: '0px',
-    fontFamily: typography.ui,
-    fontSize: '14px',
-    fontWeight: 500,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase',
-    color: colors.onPrimary,
-    backgroundColor: colors.primary,
-    padding: '10px 24px',
-    border: `1px solid ${colors.primary}`,
-    transition: 'all 0.3s ease-in-out',
-    boxShadow: 'none',
-    '&:hover': {
-        backgroundColor: 'transparent',
-        color: colors.primary,
-        boxShadow: 'none',
-    }
-});
-
-const SecondaryButton = styled(Button)({
-    borderRadius: '0px',
-    fontFamily: typography.ui,
-    fontSize: '14px',
-    fontWeight: 500,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase',
-    color: colors.text,
-    backgroundColor: 'transparent',
-    padding: '10px 24px',
-    border: `1px solid ${colors.borderLight}`,
-    transition: 'all 0.3s ease-in-out',
-    boxShadow: 'none',
-    '&:hover': {
-        backgroundColor: 'rgba(0, 0, 0, 0.05)',
-        boxShadow: 'none',
     }
 });
 
@@ -161,11 +110,11 @@ export default function NavBar() {
                             alignItems: 'center',
                         }}
                     >
-                        <SecondaryButton size="small" disableRipple>
+                        <SecondaryButton size="small" disableRipple onClick={() => navigate('/login')}>
                             Log In
                         </SecondaryButton>
-                        <PrimaryButton size="small" disableRipple>
-                            Inquire
+                        <PrimaryButton size="small" disableRipple onClick={() => navigate('/signup')}>
+                            Sign Up
                         </PrimaryButton>
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -205,12 +154,18 @@ export default function NavBar() {
                                 ))}
                                 <Divider sx={{ my: 2, borderColor: colors.borderLight }} />
                                 <MenuItem sx={{ p: 0, mb: 1 }}>
-                                    <PrimaryButton fullWidth disableRipple>
-                                        Inquire
+                                    <PrimaryButton fullWidth disableRipple onClick={() => {
+                                        setOpen(false);
+                                        navigate('/signup');
+                                    }}>
+                                        Sign Up
                                     </PrimaryButton>
                                 </MenuItem>
                                 <MenuItem sx={{ p: 0 }}>
-                                    <SecondaryButton fullWidth disableRipple>
+                                    <SecondaryButton fullWidth disableRipple onClick={() => {
+                                        setOpen(false);
+                                        navigate('/login');
+                                    }}>
                                         Log In
                                     </SecondaryButton>
                                 </MenuItem>
