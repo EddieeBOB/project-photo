@@ -32,16 +32,7 @@ const ApertureIcon = () => (
     </svg>
 );
 
-const colors = {
-    text: '#1A1C1E',
-    textSecondary: '#44474E',
-    borderLight: 'rgba(0, 0, 0, 0.1)',
-};
-
-const typography = {
-    headline: '"Playfair Display", serif',
-    ui: '"Inter", sans-serif',
-};
+import { colors, typography } from '../theme';
 
 const CardContainer = styled(Box)({
     border: `1px solid ${colors.borderLight}`,
