@@ -1,7 +1,11 @@
-import { account } from "./lib/appwrite"
-import { useNavigate } from "react-router-dom"
+import { account } from "../lib/appwrite";
 
-function HandleLogIn() {
-
-
+export async function handleLogin(email, password, navigate) {
+    try {
+        await account.createEmailPasswordSession(email, password);
+        navigate('/');
+    } catch (error) {
+        console.error("Login failed:", error);
+        alert(error.message);
+    }
 }

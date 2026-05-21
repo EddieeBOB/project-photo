@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import { Link, useNavigate } from 'react-router-dom';
+import { handleLogin as handleLoginService } from '../services/loginService';
 
 import { colors, typography, PrimaryButton } from '../theme';
 
@@ -38,15 +39,13 @@ export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Placeholder for login logic
-        console.log("Login with", email, password);
-        navigate('/');
+        await handleLoginService(email, password, navigate);
     };
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: colors.surface }}>
+        <Box sx={{ display: 'flex', flexGrow: 1, backgroundColor: colors.surface }}>
             {/* Left side: Form */}
             <Box sx={{
                 flex: 1,
@@ -125,6 +124,9 @@ export default function Login() {
                     src="https://tor.cloud.appwrite.io/v1/storage/buckets/6a0952c2001568b2f373/files/1/view?project=6a09504300328dac3255&mode=admin"
                     alt="Luminous Editorial Image"
                     style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover'
