@@ -7,7 +7,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import { colors, typography, PrimaryButton } from '../theme';
-import { uploadImage } from '../services/photoService';
+import { uploadGallery } from '../services/photoService';
 import { account } from '../lib/appwrite';
 
 export interface CarouselItem {
@@ -147,10 +147,7 @@ export default function EditableGalleryCarousel() {
                 return;
             }
 
-            for (const item of unpublishedItems) {
-                const description = `${item.exhibitionTitle || 'Studio Collection'} · ${item.metadata.exposure} | ISO ${item.metadata.iso} | ${item.metadata.lens}`;
-                await uploadImage(item.file!, item.title, description, userId);
-            }
+            await uploadGallery(exhibitionTitle, userId, items);
 
             alert("Successfully published all photos!");
             setExhibitionTitle("Upload and Curate");

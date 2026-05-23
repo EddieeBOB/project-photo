@@ -17,6 +17,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "appwrite": "^25.0.0",
     "autoprefixer": "^10.5.0",
+    "pica": "^10.0.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.15.0",
