@@ -4,41 +4,43 @@ import { tablesDB, storage } from '../lib/appwrite';
 /**
  * Uploads an image to the storage bucket and creates a document in the photos collection.
  */
-// export async function uploadImage(file, userId) {
-//     try {
-//         const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
-//         const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-//         const photosCollectionId = import.meta.env.VITE_APPWRITE_PHOTOS_COLLECTION_ID;
+export async function uploadImage(file, title, description, userId) {
+    try {
+        const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
+        const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+        const photosCollectionId = import.meta.env.VITE_APPWRITE_PHOTOS_COLLECTION_ID;
 
-//         if (!bucketId || !databaseId || !photosCollectionId) {
-//             throw new Error("Missing environment variables");
-//         }
+        if (!bucketId || !databaseId || !photosCollectionId) {
+            throw new Error("Missing environment variables");
+        }
 
-//         // 1. Upload the actual image to your bucket
-//         const uploadedFile = await storage.createFile(
-//             bucketId,
-//             ID.unique(),
-//             file
-//         );
+        // 1. Upload the actual image to your bucket
+        const uploadedFile = await storage.createFile(
+            bucketId,
+            ID.unique(),
+            file
+        );
 
-//         // 2. Save the reference in your "photos" collection
-//         const photoDocument = await tabledb.createRow(
-//             databaseId,
-//             photosCollectionId,
-//             ID.unique(),
-//             {
-//                 userId: userId,
-//                 fileId: uploadedFile.$id,
-//                 createdAt: new Date().toISOString()
-//             }
-//         );
+        // 2. Save the reference in your "photos" collection
+        const photoDocument = await tablesDB.createRow({
+            databaseId,
+            tableId: photosCollectionId,
+            rowId: ID.unique(),
+            data: {
+                title: title || "Untitled Photo",
+                description: description || "",
+                isFrontPage: false,
+                "image-id": uploadedFile.$id,
+                users: userId
+            }
+        });
 
-//         return photoDocument;
-//     } catch (error) {
-//         console.error("Error uploading and saving photo:", error);
-//         throw error;
-//     }
-// }
+        return photoDocument;
+    } catch (error) {
+        console.error("Error uploading and saving photo:", error);
+        throw error;
+    }
+}
 
 /**
  * Fetches the featured artist and returns their data object.

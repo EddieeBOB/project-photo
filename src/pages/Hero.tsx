@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import { fetchFeaturedArtist } from '../services/photoService';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 
