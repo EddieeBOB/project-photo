@@ -5,8 +5,13 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
 import { colors, typography } from '../theme';
+import type { CarouselItem } from './EditableGalleryCarousel';
 
-const carouselItems = [
+export interface GalleryCarouselProps {
+    items?: CarouselItem[];
+}
+
+export const carouselItems = [
     {
         id: 1,
         src: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200&h=800',
@@ -49,9 +54,12 @@ const ProgressBar = styled(Box)(({ active }: { active: boolean }) => ({
     transition: 'background-color 0.3s ease',
 }));
 
-export default function GalleryCarousel() {
+export default function GalleryCarousel(props: GalleryCarouselProps) {
+    const { items } = props;
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
+
+    const displayItems = items ? items.filter(item => !item.isNew) : carouselItems;
 
     const handleScroll = () => {
         if (scrollRef.current) {
@@ -110,7 +118,7 @@ export default function GalleryCarousel() {
                         pb: 2
                     }}
                 >
-                    {carouselItems.map((item) => (
+                    {displayItems.map((item) => (
                         <Box
                             key={item.id}
                             sx={{
@@ -178,7 +186,7 @@ export default function GalleryCarousel() {
 
                 {/* Dots */}
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 4 }}>
-                    {carouselItems.map((_, index) => (
+                    {displayItems.map((_, index) => (
                         <ProgressBar key={index} active={index === activeIndex} />
                     ))}
                 </Box>

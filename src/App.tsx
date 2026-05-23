@@ -1,8 +1,7 @@
 import NavBar from './components/NavBar';
 import Hero from './pages/Hero';
 import FeatureCards from './components/FeatureCards';
-import GalleryCarousel from './components/GalleryCarousel';
-import EditableGalleryCarousel from './components/EditableGalleryCarousel';
+import Gallery from './pages/Gallery';
 import Footer from './components/Footer';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
@@ -24,12 +23,7 @@ function App() {
               <FeatureCards />
             </>
           } />
-          <Route path="/gallery" element={
-            <>
-              <GalleryCarousel />
-              <EditableGalleryCarousel />
-            </>
-          } />
+          <Route path="/gallery" element={<Gallery />} />
         </Routes>
       </Box>
       <Footer />
