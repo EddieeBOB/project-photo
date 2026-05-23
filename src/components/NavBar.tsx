@@ -12,9 +12,18 @@ import Drawer from '@mui/material/Drawer';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Typography from '@mui/material/Typography';
-import { useNavigate } from 'react-router-dom';
+import Menu from '@mui/material/Menu';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
+import { account } from '../lib/appwrite';
+
+const UserIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </svg>
+);
 
 const StyledToolbar = styled(Toolbar)({
     display: 'flex',
@@ -64,7 +73,38 @@ const navItems = ['Gallery', 'Exhibitions', 'Journal', 'About'];
 
 export default function NavBar() {
     const [open, setOpen] = React.useState(false);
+    const [user, setUser] = React.useState<any>(null);
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    React.useEffect(() => {
+        account.get()
+            .then((res) => {
+                setUser(res);
+            })
+            .catch(() => {
+                setUser(null);
+            });
+    }, [location.pathname]);
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await account.deleteSession('current');
+            setUser(null);
+            navigate('/');
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
 
     const toggleDrawer = (newOpen: boolean) => () => {
         setOpen(newOpen);
@@ -110,12 +150,83 @@ export default function NavBar() {
                             alignItems: 'center',
                         }}
                     >
-                        <SecondaryButton size="small" disableRipple onClick={() => navigate('/login')}>
-                            Log In
-                        </SecondaryButton>
-                        <PrimaryButton size="small" disableRipple onClick={() => navigate('/signup')}>
-                            Sign Up
-                        </PrimaryButton>
+                        {user ? (
+                            <>
+                                <IconButton
+                                    onClick={handleMenuOpen}
+                                    sx={{
+                                        color: colors.text,
+                                        p: 1,
+                                        border: `1px solid ${colors.borderLight}`,
+                                        borderRadius: '0px',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            borderColor: colors.textSecondary,
+                                            backgroundColor: 'rgba(0,0,0,0.02)',
+                                        }
+                                    }}
+                                >
+                                    <UserIcon />
+                                </IconButton>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={Boolean(anchorEl)}
+                                    onClose={handleMenuClose}
+                                    onClick={handleMenuClose}
+                                    slotProps={{
+                                        paper: {
+                                            elevation: 0,
+                                            sx: {
+                                                overflow: 'visible',
+                                                filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.08))',
+                                                mt: 1.5,
+                                                borderRadius: '0px',
+                                                border: `1px solid ${colors.borderLight}`,
+                                                backgroundColor: colors.surfaceBright || '#fff',
+                                                minWidth: '220px',
+                                                '& .MuiMenuItem-root': {
+                                                    fontFamily: typography.ui,
+                                                    fontSize: '14px',
+                                                    color: colors.text,
+                                                    py: 1.5,
+                                                    px: 2,
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }}
+                                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                                >
+                                    <Box sx={{ px: 2, py: 1.5 }}>
+                                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+                                            Account
+                                        </Typography>
+                                        <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
+                                            {user.name || user.email}
+                                        </Typography>
+                                    </Box>
+                                    <Divider sx={{ borderColor: colors.borderLight }} />
+                                    <MenuItem onClick={() => navigate('/gallery')}>
+                                        Studio Workspace
+                                    </MenuItem>
+                                    <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                                        Log Out
+                                    </MenuItem>
+                                </Menu>
+                            </>
+                        ) : (
+                            <>
+                                <SecondaryButton size="small" disableRipple onClick={() => navigate('/login')}>
+                                    Log In
+                                </SecondaryButton>
+                                <PrimaryButton size="small" disableRipple onClick={() => navigate('/signup')}>
+                                    Sign Up
+                                </PrimaryButton>
+                            </>
+                        )}
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
                         <IconButton aria-label="Menu button" onClick={toggleDrawer(true)} sx={{ color: colors.text }}>
@@ -153,22 +264,53 @@ export default function NavBar() {
                                     </MenuItem>
                                 ))}
                                 <Divider sx={{ my: 2, borderColor: colors.borderLight }} />
-                                <MenuItem sx={{ p: 0, mb: 1 }}>
-                                    <PrimaryButton fullWidth disableRipple onClick={() => {
-                                        setOpen(false);
-                                        navigate('/signup');
-                                    }}>
-                                        Sign Up
-                                    </PrimaryButton>
-                                </MenuItem>
-                                <MenuItem sx={{ p: 0 }}>
-                                    <SecondaryButton fullWidth disableRipple onClick={() => {
-                                        setOpen(false);
-                                        navigate('/login');
-                                    }}>
-                                        Log In
-                                    </SecondaryButton>
-                                </MenuItem>
+                                {user ? (
+                                    <>
+                                        <Box sx={{ px: 2, pb: 2 }}>
+                                            <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+                                                Account
+                                            </Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
+                                                {user.name || user.email}
+                                            </Typography>
+                                        </Box>
+                                        <MenuItem sx={{ p: 0, mb: 1 }}>
+                                            <PrimaryButton fullWidth disableRipple onClick={() => {
+                                                setOpen(false);
+                                                navigate('/gallery');
+                                            }}>
+                                                Studio Workspace
+                                            </PrimaryButton>
+                                        </MenuItem>
+                                        <MenuItem sx={{ p: 0 }}>
+                                            <SecondaryButton fullWidth disableRipple onClick={() => {
+                                                setOpen(false);
+                                                handleLogout();
+                                            }} sx={{ color: 'error.main' }}>
+                                                Log Out
+                                            </SecondaryButton>
+                                        </MenuItem>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MenuItem sx={{ p: 0, mb: 1 }}>
+                                            <PrimaryButton fullWidth disableRipple onClick={() => {
+                                                setOpen(false);
+                                                navigate('/signup');
+                                            }}>
+                                                Sign Up
+                                            </PrimaryButton>
+                                        </MenuItem>
+                                        <MenuItem sx={{ p: 0 }}>
+                                            <SecondaryButton fullWidth disableRipple onClick={() => {
+                                                setOpen(false);
+                                                navigate('/login');
+                                            }}>
+                                                Log In
+                                            </SecondaryButton>
+                                        </MenuItem>
+                                    </>
+                                )}
                             </Box>
                         </Drawer>
                     </Box>
