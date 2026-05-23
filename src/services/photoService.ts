@@ -8,34 +8,36 @@ import type { CarouselItem } from '../components/EditableGalleryCarousel';
  * Uploads an image to the storage bucket and creates a document in the photos collection.
  */
 
-//TODO: API for uploading images
+const resizer = pica({ features: ['js', 'wasm', 'ww'] });
+
 
 export async function resizeImage(file: File, width: number): Promise<Blob> {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.src = URL.createObjectURL(file);
+        const objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
         img.onload = async () => {
             try {
                 // Calculate height to maintain aspect ratio
                 const scale = width / img.width;
-                const height = img.height * scale;
+                const height = Math.round(img.height * scale);
 
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
 
-                const resizer = pica();
-                await resizer.resize(img, canvas);
-                
-                const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg');
-                URL.revokeObjectURL(img.src);
+                await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as any);
+                const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg', 0.85);
+
                 resolve(blob);
             } catch (err) {
-                URL.revokeObjectURL(img.src);
                 reject(err);
+            } finally {
+                URL.revokeObjectURL(objectUrl);
             }
         };
         img.onerror = (err) => {
+            URL.revokeObjectURL(objectUrl);
             reject(err);
         };
     });
