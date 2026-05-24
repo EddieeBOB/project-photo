@@ -58,7 +58,6 @@ export async function uploadGallery(title: string, userId: string, items: Carous
     return uploadedDocuments;
 }
 
-
 export async function uploadImage(file: File | Blob, title: string, description: string, userId: string) {
     try {
         const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
@@ -91,7 +90,7 @@ export async function uploadImage(file: File | Blob, title: string, description:
                 description: description || "",
                 isFrontPage: false,
                 "image-id": uploadedFile.$id,
-                users: userId
+                gallery: userId
             }
         });
 
@@ -111,17 +110,18 @@ export async function fetchFeaturedArtist() {
         const photosId = import.meta.env.VITE_APPWRITE_PHOTOS_COLLECTION_ID;
         const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 
+        // Fetch the featured photo with the full relationship chain populated
         const response = await tablesDB.listRows({
             databaseId,
             tableId: photosId,
             queries: [
                 Query.equal('isFrontPage', true),
                 Query.limit(1),
-                Query.select(['*', 'users.firstName', 'users.lastName'])
             ]
         });
 
         const doc = response.rows[0];
+        if (!doc) return null;
 
         let imageUrl = null;
 
@@ -134,16 +134,58 @@ export async function fetchFeaturedArtist() {
             imageUrl = storage.getFileView(bucketId, fileId).toString() + `&t=${new Date(doc.$updatedAt).getTime()}`;
         }
 
-        // The artist relationship field is "users"
-        const user = Array.isArray(doc.users) ? doc.users[0] : doc.users;
-        const firstName = user.firstName;
-        const lastName = user.lastName;
+        // Traverse the relationship chain: photo.gallery -> gallery.users -> user
+        let firstName = 'Unknown';
+        let lastName = 'Artist';
 
-        // The quote can be the description or title
+        const gallery = doc.gallery;
+        const galleryDoc = Array.isArray(gallery) ? gallery[0] : gallery;
+
+        if (galleryDoc && typeof galleryDoc === 'object') {
+            // Gallery is a populated relationship object
+            const usersField = galleryDoc.users;
+            const user = Array.isArray(usersField) ? usersField[0] : usersField;
+            if (user && typeof user === 'object') {
+                firstName = user.firstName || 'Unknown';
+                lastName = user.lastName || 'Artist';
+            } else if (user && typeof user === 'string') {
+                // users field is a raw user ID — fetch the user
+                const artistsId = import.meta.env.VITE_APPWRITE_ARTISTS_COLLECTION_ID;
+                if (artistsId) {
+                    try {
+                        const userDoc = await tablesDB.getRow({ databaseId, tableId: artistsId, rowId: user });
+                        firstName = userDoc.firstName || 'Unknown';
+                        lastName = userDoc.lastName || 'Artist';
+                    } catch { /* user not found */ }
+                }
+            }
+        } else if (galleryDoc && typeof galleryDoc === 'string') {
+            // Gallery is a raw gallery ID — fetch the gallery doc, then resolve the user
+            try {
+                const galleryRow = await tablesDB.getRow({ databaseId, tableId: 'gallery', rowId: galleryDoc });
+                const usersField = galleryRow.users;
+                const userId = Array.isArray(usersField) ? usersField[0] : usersField;
+
+                if (userId && typeof userId === 'object') {
+                    firstName = userId.firstName || 'Unknown';
+                    lastName = userId.lastName || 'Artist';
+                } else if (userId && typeof userId === 'string') {
+                    const artistsId = import.meta.env.VITE_APPWRITE_ARTISTS_COLLECTION_ID;
+                    if (artistsId) {
+                        const userDoc = await tablesDB.getRow({ databaseId, tableId: artistsId, rowId: userId });
+                        firstName = userDoc.firstName || 'Unknown';
+                        lastName = userDoc.lastName || 'Artist';
+                    }
+                }
+            } catch {
+                // Gallery or user not found — use defaults
+            }
+        }
+
         const title = doc.title;
 
         return {
-            name: `${firstName}  ${lastName}`,
+            name: `${firstName} ${lastName}`,
             title: `"${title}"`,
             imageUrl: imageUrl
         };
@@ -152,3 +194,4 @@ export async function fetchFeaturedArtist() {
         return null;
     }
 }
+

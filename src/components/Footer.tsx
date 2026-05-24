@@ -20,14 +20,14 @@ const FooterLink = styled(Link)({
 });
 
 const SocialIcon = () => (
-    <Box 
-        component="a" 
+    <Box
+        component="a"
         href="#"
-        sx={{ 
-            color: colors.textSecondary, 
-            display: 'flex', 
+        sx={{
+            color: colors.textSecondary,
+            display: 'flex',
             transition: 'color 0.2s ease',
-            '&:hover': { color: colors.text } 
+            '&:hover': { color: colors.text }
         }}
     >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" strokeLinejoin="miter">
@@ -40,21 +40,21 @@ const SocialIcon = () => (
 
 export default function Footer() {
     return (
-        <Box sx={{ borderTop: `1px solid ${colors.borderLight}`, backgroundColor: '#F9F9F9', py: 6 }}>
-            <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
-                <Box 
-                    sx={{ 
-                        display: 'flex', 
-                        flexDirection: { xs: 'column', md: 'row' }, 
+        <Box sx={{ borderTop: `1px solid ${colors.borderLight}`, backgroundColor: '#F9F9F9', py: 3 }}>
+            <Container maxWidth="lg" sx={{ px: { xs: 3, md: 1 } }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' },
                         justifyContent: 'space-between',
                         alignItems: { xs: 'flex-start', md: 'center' },
                         gap: 4
                     }}
                 >
                     {/* Brand */}
-                    <Typography 
-                        variant="h6" 
-                        sx={{ 
+                    <Typography
+                        variant="h6"
+                        sx={{
                             fontFamily: typography.headline,
                             color: colors.text,
                             fontSize: '20px',
@@ -80,8 +80,8 @@ export default function Footer() {
                         <SocialIcon />
                     </Box>
                 </Box>
-                
-                <Box sx={{ mt: 6, pt: 4, borderTop: `1px solid ${colors.borderLight}`, display: 'flex', justifyContent: 'space-between' }}>
+
+                <Box sx={{ mt: 3, pt: 4, borderTop: `1px solid ${colors.borderLight}`, display: 'flex', justifyContent: 'space-between' }}>
                     <Typography sx={{ fontFamily: typography.ui, fontSize: '11px', color: colors.textSecondary }}>
                         © {new Date().getFullYear()} Frame Collective. All rights reserved.
                     </Typography>

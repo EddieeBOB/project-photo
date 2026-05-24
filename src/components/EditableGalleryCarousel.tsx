@@ -59,6 +59,21 @@ const EditableInput = styled('input')({
 });
 
 export default function EditableGalleryCarousel() {
+    const [user, setUser] = React.useState<any>(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        account.get()
+            .then(res => {
+                setUser(res);
+                setLoading(false);
+            })
+            .catch(() => {
+                setUser(null);
+                setLoading(false);
+            });
+    }, []);
+
     const [activeIndex, setActiveIndex] = React.useState(0);
     const [isPublishing, setIsPublishing] = React.useState(false);
     const [exhibitionTitle, setExhibitionTitle] = React.useState("Untitled Gallery");
@@ -169,6 +184,10 @@ export default function EditableGalleryCarousel() {
             setIsPublishing(false);
         }
     };
+
+    if (loading || !user) {
+        return null;
+    }
 
     return (
         <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: '#F9F9F9' }}>
