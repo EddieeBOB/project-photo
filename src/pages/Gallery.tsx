@@ -1,6 +1,7 @@
 import * as React from 'react';
 import GalleryCarousel from '../components/GalleryCarousel';
 import EditableGalleryCarousel, { type CarouselItem } from '../components/EditableGalleryCarousel';
+import { account } from '../lib/appwrite';
 
 const initialItems: CarouselItem[] = [
     {
@@ -40,10 +41,21 @@ const initialItems: CarouselItem[] = [
 
 export default function Gallery() {
     const [items] = React.useState<CarouselItem[]>(initialItems);
+    const [user, setUser] = React.useState<any>(null);
+
+    React.useEffect(() => {
+        account.get()
+            .then((res) => {
+                setUser(res);
+            })
+            .catch(() => {
+                setUser(null);
+            });
+    }, []);
 
     return (
         <>
-            <GalleryCarousel items={items} />
+            {!user && <GalleryCarousel items={items} />}
             <EditableGalleryCarousel />
         </>
     );

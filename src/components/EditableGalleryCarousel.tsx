@@ -7,23 +7,32 @@ import ButtonBase from '@mui/material/ButtonBase';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import { colors, typography, PrimaryButton } from '../theme';
-import { uploadGallery } from '../services/photoService';
+import { createGallery } from '../services/photoService';
 import { account } from '../lib/appwrite';
 
-export interface CarouselItem {
-    id: number | string;
-    src: string;
+export interface Gallery {
+    id: string;
     title: string;
-    author: string;
-    exhibitionTitle?: string;
+    userId: string;
+    photos: Photo[];
+}
+
+export interface Photo {
+    id: string;
+    title: string;
+    description: string;
     metadata: {
         exposure: string;
         iso: string;
         lens: string;
     };
-    isNew?: boolean;
     file?: File;
 }
+
+export type CarouselPhoto = Photo & {
+    src?: string;
+    isNew?: boolean;
+};
 
 const ProgressBar = styled(Box)(({ active }: { active: boolean }) => ({
     height: '1px',
@@ -82,15 +91,14 @@ export default function EditableGalleryCarousel() {
     const handleExhibitionTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newTitle = e.target.value;
         setExhibitionTitle(newTitle);
-        setItems(prev => prev.map(item => ({ ...item, exhibitionTitle: newTitle })));
     };
 
-    const [items, setItems] = React.useState<CarouselItem[]>([
+    const [items, setItems] = React.useState<CarouselPhoto[]>([
         {
             id: 'placeholder',
             src: '',
             title: '',
-            author: '',
+            description: '',
             metadata: { exposure: '', iso: '', lens: '' },
             isNew: true
         }
@@ -109,12 +117,11 @@ export default function EditableGalleryCarousel() {
         const file = event.target.files?.[0];
         if (file) {
             const previewUrl = URL.createObjectURL(file);
-            const newItem: CarouselItem = {
+            const newItem: CarouselPhoto = {
                 id: Date.now().toString(),
                 src: previewUrl,
                 title: 'Untitled Photo',
-                author: 'You',
-                exhibitionTitle: exhibitionTitle,
+                description: '',
                 metadata: {
                     exposure: '1/125 · f/8.0',
                     iso: '100',
@@ -162,7 +169,14 @@ export default function EditableGalleryCarousel() {
                 return;
             }
 
-            await uploadGallery(exhibitionTitle, userId, items);
+            const galleryToUpload: Gallery = {
+                id: Date.now().toString(),
+                title: exhibitionTitle,
+                userId: userId,
+                photos: items.filter(item => item.file)
+            };
+
+            await createGallery(exhibitionTitle, userId, galleryToUpload);
 
             alert("Successfully published all photos!");
             setExhibitionTitle("Upload and Curate");
@@ -171,7 +185,7 @@ export default function EditableGalleryCarousel() {
                     id: 'placeholder',
                     src: '',
                     title: '',
-                    author: '',
+                    description: '',
                     metadata: { exposure: '', iso: '', lens: '' },
                     isNew: true
                 }
@@ -190,7 +204,7 @@ export default function EditableGalleryCarousel() {
     }
 
     return (
-        <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: '#F9F9F9' }}>
+        <Box sx={{ py: { xs: 8, md: 20 }, backgroundColor: '#F9F9F9' }}>
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
 
                 {/* Header */}
@@ -336,9 +350,9 @@ export default function EditableGalleryCarousel() {
                                             </Box>
                                             <Box sx={{ fontFamily: typography.ui, fontSize: '14px', color: colors.textSecondary, fontStyle: 'italic' }}>
                                                 <EditableInput
-                                                    value={item.author}
-                                                    onChange={(e) => updateItemField(item.id, 'author', e.target.value)}
-                                                    placeholder="Author name..."
+                                                    value={item.description}
+                                                    onChange={(e) => updateItemField(item.id, 'description', e.target.value)}
+                                                    placeholder="Description..."
                                                 />
                                             </Box>
                                         </Box>
