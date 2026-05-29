@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { Link, useNavigate } from 'react-router-dom';
 import { handleSignUp as handleSignUpService } from '../services/signupService';
+import { useAuth } from '../contexts/AuthContext';
 
 import { colors, typography, PrimaryButton } from '../theme';
 
@@ -38,10 +39,17 @@ export default function SignUp() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const { checkAuth } = useAuth();
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
-        await handleSignUpService(name, email, password, navigate);
+        try {
+            await handleSignUpService(name, email, password);
+            await checkAuth(); // Refresh global user state
+            navigate('/gallery'); // Redirect to gallery
+        } catch (error) {
+            // Error is handled in the service
+        }
     };
 
     return (

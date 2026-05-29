@@ -69,7 +69,7 @@ const NavButton = styled(Button)({
     }
 });
 
-const navItems = ['Gallery', 'Exhibitions', 'Journal', 'About'];
+const navItems = ['Gallery', 'Journal', 'About'];
 
 export default function NavBar() {
     const [open, setOpen] = React.useState(false);
@@ -252,8 +252,8 @@ export default function NavBar() {
                                     </IconButton>
                                 </Box>
                                 {navItems.map((item) => (
-                                    <MenuItem 
-                                        key={item} 
+                                    <MenuItem
+                                        key={item}
                                         onClick={() => {
                                             setOpen(false);
                                             if (item === 'Gallery') navigate('/gallery');
