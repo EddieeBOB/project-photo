@@ -175,12 +175,12 @@ export async function uploadImage(file: File | Blob, userId: string) {
         // 2. Upload the actual image to your bucket
         const buuid = ID.unique();
 
-        await storage.createFile(
+        await storage.createFile({
             bucketId,
-            buuid,
-            fileToUpload,
+            fileId: buuid,
+            file: fileToUpload,
             permissions
-        );
+        });
         return buuid;
     } catch (error) {
         console.error("Error uploading and saving photo:", error);

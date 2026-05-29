@@ -5,6 +5,7 @@ import Gallery from './pages/Gallery';
 import Footer from './components/Footer';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import { Routes, Route } from 'react-router-dom';
 import Box from '@mui/material/Box';
