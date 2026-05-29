@@ -5,61 +5,56 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
 import { colors, typography } from '../theme';
-import type { CarouselItem } from './EditableGalleryCarousel';
+import type { Gallery, CarouselPhoto } from './EditableGalleryCarousel';
 
 export interface GalleryCarouselProps {
-    items?: CarouselItem[];
+    gallery?: Gallery & { photos: CarouselPhoto[] };
+    authorName?: string;
 }
 
-export const carouselItems = [
-    {
-        id: 1,
-        src: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200&h=800',
-        title: 'Void and Structure',
-        author: 'Julian Vossen',
-        metadata: {
-            exposure: '1/125 · f/8.0',
-            iso: '100',
-            lens: '35mm'
+export const defaultGallery: Gallery & { photos: CarouselPhoto[] } = {
+    id: 'default',
+    title: 'The Silent Architecture of Light',
+    userId: 'system',
+    photos: [
+        {
+            id: '1',
+            title: 'Void and Structure',
+            description: '',
+            src: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200&h=800',
+            metadata: { exposure: '1/125 · f/8.0', iso: '100', lens: '35mm' }
+        },
+        {
+            id: '2',
+            title: 'Organic Tension',
+            description: '',
+            src: 'https://images.unsplash.com/photo-1490682143684-14369e18dce8?auto=format&fit=crop&q=80&w=1200&h=800',
+            metadata: { exposure: '1/250 · f/5.6', iso: '400', lens: '50mm' }
+        },
+        {
+            id: '3',
+            title: 'Silent Geometry',
+            description: '',
+            src: 'https://images.unsplash.com/photo-1506744626753-1fa30fd200ab?auto=format&fit=crop&q=80&w=1200&h=800',
+            metadata: { exposure: '1/500 · f/2.8', iso: '100', lens: '85mm' }
         }
-    },
-    {
-        id: 2,
-        src: 'https://images.unsplash.com/photo-1490682143684-14369e18dce8?auto=format&fit=crop&q=80&w=1200&h=800',
-        title: 'Organic Tension',
-        author: 'Elena Rossi',
-        metadata: {
-            exposure: '1/250 · f/5.6',
-            iso: '400',
-            lens: '50mm'
-        }
-    },
-    {
-        id: 3,
-        src: 'https://images.unsplash.com/photo-1506744626753-1fa30fd200ab?auto=format&fit=crop&q=80&w=1200&h=800',
-        title: 'Silent Geometry',
-        author: 'Marcus Lin',
-        metadata: {
-            exposure: '1/500 · f/2.8',
-            iso: '100',
-            lens: '85mm'
-        }
-    }
-];
+    ]
+};
 
-const ProgressBar = styled(Box)(({ active }: { active: boolean }) => ({
+const ProgressBar = styled(Box, {
+    shouldForwardProp: (prop) => prop !== 'active',
+})<{ active: boolean }>(({ active }) => ({
     height: '1px',
     width: '40px',
     backgroundColor: active ? colors.text : colors.borderLight,
     transition: 'background-color 0.3s ease',
 }));
 
-export default function GalleryCarousel(props: GalleryCarouselProps) {
-    const { items } = props;
+export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen' }: GalleryCarouselProps) {
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
 
-    const displayItems = items ? items.filter(item => !item.isNew) : carouselItems;
+    const displayItems = (gallery.photos as CarouselPhoto[]).filter(photo => !photo.isNew);
 
     const handleScroll = () => {
         if (scrollRef.current) {
@@ -88,7 +83,7 @@ export default function GalleryCarousel(props: GalleryCarouselProps) {
                             mb: 1
                         }}
                     >
-                        EXHIBITION NO. 12
+                        EXHIBITION NO. {gallery.id === 'default' ? '12' : gallery.id.slice(-4).toUpperCase()}
                     </Typography>
                     <Typography
                         variant="h2"
@@ -100,7 +95,7 @@ export default function GalleryCarousel(props: GalleryCarouselProps) {
                             letterSpacing: '-0.02em'
                         }}
                     >
-                        The Silent Architecture of Light
+                        {gallery.title || (gallery as any).galleryTitle || 'Untitled Exhibition'}
                     </Typography>
                 </Box>
 
@@ -136,6 +131,7 @@ export default function GalleryCarousel(props: GalleryCarouselProps) {
                                 <img
                                     src={item.src}
                                     alt={item.title}
+                                    crossOrigin="anonymous"
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                             </Box>
@@ -161,22 +157,22 @@ export default function GalleryCarousel(props: GalleryCarouselProps) {
                                             fontStyle: 'italic'
                                         }}
                                     >
-                                        by {item.author}
+                                        by {authorName}
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
                                     <Box>
                                         <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Exposure</Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata.exposure}</Typography>
+                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.exposure || 'N/A'}</Typography>
                                     </Box>
                                     <Box>
                                         <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>ISO</Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata.iso}</Typography>
+                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.iso || 'N/A'}</Typography>
                                     </Box>
                                     <Box>
                                         <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Lens</Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata.lens}</Typography>
+                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.lens || 'N/A'}</Typography>
                                     </Box>
                                 </Box>
                             </Box>

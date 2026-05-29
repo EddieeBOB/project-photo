@@ -10,7 +10,7 @@ const tablesDB = new TablesDB(client);
 
 const storage = new Storage(client);
 
-async function testRows() {
+async function testPhotosRows() {
     try {
         const databaseId = '6a0955e90024b114ad38';
         const photosId = 'photos';
@@ -53,4 +53,27 @@ function retrieveImageURL(fileId) {
     return result;
 }
 
-testRows();
+async function testUsersRows(userId) {
+    try {
+        const databaseId = '6a0955e90024b114ad38';
+        // Fetch the featured photo with the full relationship chain populated
+        const response = await tablesDB.listRows({
+            databaseId,
+            tableId: 'users',
+            queries: [
+                Query.equal('$id', userId),
+                Query.select(['gallery.photos.*'])
+            ]
+        });
+        console.log(response.rows[0].gallery);
+        for (const photo of response.rows[0].gallery[0].photos) {
+            console.log(retrieveImageURL(response.rows[0].gallery[0].photos[0].imageId));
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+//testPhotosRows();
+testUsersRows('6a0f80a80015d5d872cd');
