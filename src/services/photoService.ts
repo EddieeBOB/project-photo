@@ -6,11 +6,14 @@ import type { Gallery, Photo } from '../components/EditableGalleryCarousel';
 const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 
-
 /**
- * Uploads an image to the storage bucket and creates a document in the photos collection.
+ * Resizes an image file to the specified maximum width while maintaining its aspect ratio.
+ * Used to compress large image uploads on the client side before sending to the server.
+ * 
+ * @param file - The original File object from the file input
+ * @param width - The maximum width in pixels for the resized image
+ * @returns A Promise that resolves to the resized Blob
  */
-
 const resizer = pica({ features: ['js', 'wasm', 'ww'] });
 export async function resizeImage(file: File, width: number): Promise<Blob> {
     return new Promise((resolve, reject) => {
@@ -28,7 +31,7 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
                 canvas.height = height;
 
                 await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as any);
-                const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg', 0.85);
+                const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg', 1);
 
                 resolve(blob);
             } catch (err) {
@@ -44,17 +47,20 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
     });
 }
 
-//Creates gallery row for db 
+/**
+ * Creates a new gallery row in the database, uploads all associated photos to the storage bucket,
+ * and creates corresponding database rows for each photo. Finally, links all uploaded photos
+ * to the gallery.
+ * 
+ * @param galleryTitle - The title of the new exhibition/gallery
+ * @param userId - The ID of the currently logged-in user who owns this gallery
+ * @param gallery - The Gallery object containing the array of photos to be uploaded
+ */
 export async function createGallery(galleryTitle: string, userId: string, gallery: Gallery) {
 
-    //Create all the UUID for all the photos
-    const puuid: string[] = [];
-    for (let _photo of gallery.photos) {
-        puuid.push(ID.unique());
-    }
-
-    //Ccreate UUID for gallery
+    // Create UUID for gallery
     const guuid = ID.unique();
+    const photoIds: string[] = [];
 
     //Creates a gallery row in DB
     try {
@@ -75,9 +81,11 @@ export async function createGallery(galleryTitle: string, userId: string, galler
             permissions
         });
 
-        //Create rows for each photo with the UUID
-        for (let i = 0; i < gallery.photos.length; i++) {
-            await createImage(gallery.photos[i], puuid[i], userId, guuid);
+        // Create rows for each photo with a dynamically generated UUID
+        for (const photo of gallery.photos) {
+            const photoId = ID.unique();
+            photoIds.push(photoId);
+            await createImage(photo, photoId, userId, guuid);
         }
 
         // Now that the photos actually exist in the database, we can safely link them to the gallery!
@@ -86,7 +94,7 @@ export async function createGallery(galleryTitle: string, userId: string, galler
             tableId: 'gallery',
             rowId: guuid,
             data: {
-                photos: puuid
+                photos: photoIds
             }
         });
 
@@ -97,12 +105,20 @@ export async function createGallery(galleryTitle: string, userId: string, galler
 
 }
 
-//Create image row for db
+/**
+ * Uploads a photo file to the storage bucket and creates a document for it in the 'photos' collection.
+ * It also links the new photo document back to its parent gallery document.
+ * 
+ * @param item - The photo item containing the raw file, title, and description
+ * @param uuid - The unique ID to be assigned to the new photo database row
+ * @param userId - The ID of the currently logged-in user
+ * @param galleryId - The ID of the parent gallery document
+ */
 export async function createImage(item: Photo, uuid: string, userId: string, galleryId: string) {
     if (!item.file) return;
 
     // Await the image upload first to get the string ID back!
-    const imageId = await uploadImage(item.file, item.title, item.description, userId);
+    const imageId = await uploadImage(item.file, userId);
 
     const permissions = [
         Permission.read(Role.any()),
@@ -118,6 +134,9 @@ export async function createImage(item: Photo, uuid: string, userId: string, gal
         data: {
             title: item.title,
             description: item.description,
+            exposure: item.metadata.exposure,
+            iso: item.metadata.iso,
+            lens: item.metadata.lens,
             isFrontPage: false,
             imageId: imageId,
             gallery: galleryId
@@ -127,7 +146,16 @@ export async function createImage(item: Photo, uuid: string, userId: string, gal
 }
 
 
-export async function uploadImage(file: File | Blob, title: string, description: string, userId: string) {
+/**
+ * Resizes (if needed) and uploads the raw image file to the Appwrite Storage bucket.
+ * 
+ * @param file - The File or Blob to be uploaded
+ * @param title - The title of the photo
+ * @param description - The description of the photo
+ * @param userId - The ID of the currently logged-in user (for setting permissions)
+ * @returns A Promise that resolves to the Appwrite storage file ID (buuid)
+ */
+export async function uploadImage(file: File | Blob, userId: string) {
     try {
         // 1. Resize Image if it is a File (and not already resized/blob)
         let fileToUpload: File;
@@ -160,29 +188,30 @@ export async function uploadImage(file: File | Blob, title: string, description:
     }
 }
 
-/*
-* Requires: fileId, width
-* Uses photoId and returns photo URL
-*/
+/**
+ * Generates an image preview URL from the Appwrite storage bucket.
+ * 
+ * @param fileId - The storage bucket file ID
+ * @param width - The maximum width of the generated preview image
+ * @returns An object containing the preview URL
+ */
 export function retrieveImageURL(fileId: string, width: number) {
     const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
     const result = storage.getFilePreview({
         bucketId,
         fileId,
         width,
-        quality: 85
+        quality: 100
     });
     return result;
 }
 
-/*
-* Requires: isFrontPage only exists on one photo
-* Queries the 'photos' database, and its RELATIONSHIPS for:
-* Title, Description, FirstName, LastName
-* 
-* Serves the front page.
-* 
-* Returns: ImageURL(Width: 500)
+/**
+ * Queries the 'photos' database collection to find the single featured photo.
+ * Returns the photo along with its nested relationship data (Gallery and User information)
+ * to serve the front page.
+ * 
+ * @returns An object containing the combined artist name, photo title, and generated preview URL.
  */
 export async function fetchFeaturedArtist() {
     try {
@@ -216,3 +245,22 @@ export async function fetchFeaturedArtist() {
     }
 }
 
+/**
+ * Fetches the user document and their associated gallery from the database.
+ * This query also populates the nested relationship fields so that the complete
+ * gallery details and all associated photos are returned in a single request.
+ * 
+ * @param userId - The ID of the currently logged-in user
+ * @returns A Promise that resolves to the user's Gallery object (which includes a 'photos' array)
+ */
+export async function fetchUserGallery(userId: string) {
+    const response = await tablesDB.listRows({
+        databaseId,
+        tableId: 'users',
+        queries: [
+            Query.equal('$id', userId),
+            Query.select(['*', 'gallery.*', 'gallery.photos.*'])
+        ]
+    })
+    return (response.rows[0]);
+}

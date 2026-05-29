@@ -1,61 +1,56 @@
 import * as React from 'react';
 import GalleryCarousel from '../components/GalleryCarousel';
-import EditableGalleryCarousel, { type CarouselItem } from '../components/EditableGalleryCarousel';
-import { account } from '../lib/appwrite';
+import EditableGalleryCarousel, { type Gallery, type CarouselPhoto } from '../components/EditableGalleryCarousel';
+import { fetchUserGallery, retrieveImageURL } from '../services/photoService';
+import { useAuth } from '../contexts/AuthContext';
 
-const initialItems: CarouselItem[] = [
-    {
-        id: 1,
-        src: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200&h=800',
-        title: 'Void and Structure',
-        author: 'Julian Vossen',
-        metadata: {
-            exposure: '1/125 · f/8.0',
-            iso: '100',
-            lens: '35mm'
-        }
-    },
-    {
-        id: 2,
-        src: 'https://images.unsplash.com/photo-1490682143684-14369e18dce8?auto=format&fit=crop&q=80&w=1200&h=800',
-        title: 'Organic Tension',
-        author: 'Elena Rossi',
-        metadata: {
-            exposure: '1/250 · f/5.6',
-            iso: '400',
-            lens: '50mm'
-        }
-    },
-    {
-        id: 3,
-        src: 'https://images.unsplash.com/photo-1506744626753-1fa30fd200ab?auto=format&fit=crop&q=80&w=1200&h=800',
-        title: 'Silent Geometry',
-        author: 'Marcus Lin',
-        metadata: {
-            exposure: '1/500 · f/2.8',
-            iso: '100',
-            lens: '85mm'
-        }
-    }
-];
-
-export default function Gallery() {
-    const [items] = React.useState<CarouselItem[]>(initialItems);
-    const [user, setUser] = React.useState<any>(null);
+export default function GalleryPage() {
+    const { user, loading } = useAuth();
+    const [userGallery, setUserGallery] = React.useState<(Gallery & { photos: CarouselPhoto[] }) | null>(null);
 
     React.useEffect(() => {
-        account.get()
-            .then((res) => {
-                setUser(res);
-            })
-            .catch(() => {
-                setUser(null);
-            });
-    }, []);
+        if (!user) {
+            setUserGallery(null);
+            return;
+        }
+
+        const loadGallery = async () => {
+            try {
+                const fetchedUser = await fetchUserGallery(user.$id);
+                const fetchedGallery = fetchedUser?.gallery?.[0]; // fetchUserGallery returns the User object, so we need its first gallery
+                if (fetchedGallery && fetchedGallery.photos && fetchedGallery.photos.length > 0) {
+                    const mappedPhotos = fetchedGallery.photos.map((photo: any) => ({
+                        id: photo.$id,
+                        src: retrieveImageURL(photo.imageId, 1200),
+                        title: photo.title || 'Untitled',
+                        description: photo.description,
+                        metadata: {
+                            exposure: photo.exposure || 'N/A',
+                            iso: photo.iso || 'N/A',
+                            lens: photo.lens || 'N/A'
+                        }
+                    }));
+
+                    setUserGallery({
+                        id: fetchedGallery.$id,
+                        title: fetchedGallery.galleryTitle || "Untitled Exhibition",
+                        userId: user.$id,
+                        photos: mappedPhotos as any
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load user gallery:", error);
+            }
+        };
+        loadGallery();
+    }, [user]);
+
+    if (loading) return null;
 
     return (
         <>
-            {!user && <GalleryCarousel items={items} />}
+            {!user && <GalleryCarousel />}
+            {user && userGallery && <GalleryCarousel gallery={userGallery} authorName={user.name || 'You'} />}
             <EditableGalleryCarousel />
         </>
     );

@@ -34,7 +34,9 @@ export type CarouselPhoto = Photo & {
     isNew?: boolean;
 };
 
-const ProgressBar = styled(Box)(({ active }: { active: boolean }) => ({
+const ProgressBar = styled(Box, {
+    shouldForwardProp: (prop) => prop !== 'active',
+})<{ active: boolean }>(({ active }) => ({
     height: '1px',
     width: '40px',
     backgroundColor: active ? colors.text : colors.borderLight,
@@ -334,6 +336,7 @@ export default function EditableGalleryCarousel() {
                                         <img
                                             src={item.src}
                                             alt={item.title}
+                                            crossOrigin="anonymous"
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
                                     </Box>
