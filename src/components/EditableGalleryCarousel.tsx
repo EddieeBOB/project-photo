@@ -305,16 +305,14 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
             }
 
             for (const item of unpublishedItems) {
-                if (!item.title?.trim()) {
-                    setToastMsg({text: "Each photo must have a title. Please check your photos.", type: 'error'});
-                    return;
-                }
-                if (item.title.length > MAX_TITLE_LENGTH) {
-                    setToastMsg({text: `Photo title "${item.title.substring(0, 20)}..." is too long (max ${MAX_TITLE_LENGTH} characters).`, type: 'error'});
+                const itemTitle = item.title?.trim() || '';
+                if (itemTitle.length > MAX_TITLE_LENGTH) {
+                    setToastMsg({text: `Photo title "${itemTitle.substring(0, 20)}..." is too long (max ${MAX_TITLE_LENGTH} characters).`, type: 'error'});
                     return;
                 }
                 if ((item.description?.length ?? 0) > MAX_DESCRIPTION_LENGTH) {
-                    setToastMsg({text: `Description for "${item.title}" is too long (max ${MAX_DESCRIPTION_LENGTH} characters).`, type: 'error'});
+                    const displayName = itemTitle ? `"${itemTitle}"` : "this photo";
+                    setToastMsg({text: `Description for ${displayName} is too long (max ${MAX_DESCRIPTION_LENGTH} characters).`, type: 'error'});
                     return;
                 }
             }
@@ -323,7 +321,10 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                 id: Date.now().toString(),
                 title: exhibitionTitle,
                 userId: userId,
-                photos: items.filter(item => item.file)
+                photos: items.filter(item => item.file).map(item => ({
+                    ...item,
+                    title: item.title?.trim() || ''
+                }))
             };
 
             await createGallery(exhibitionTitle, userId, galleryToUpload);
