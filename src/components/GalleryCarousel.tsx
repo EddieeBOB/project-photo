@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 
+import { useTranslation } from 'react-i18next';
+
 import { colors, typography } from '../theme';
 import type { Gallery, CarouselPhoto } from './EditableGalleryCarousel';
 
@@ -55,6 +57,7 @@ const ProgressBar = styled(Box, {
 }));
 
 export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, disableHeaderPadding }: GalleryCarouselProps) {
+    const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const [confirmDelete, setConfirmDelete] = React.useState(false);
@@ -150,7 +153,7 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                 mb: 1
                             }}
                         >
-                            EXHIBITION NO. {index !== undefined ? String(index + 1).padStart(2, '0') : (gallery.id === 'default' ? '12' : gallery.id)}
+                            {t('galleryCarousel.exhibitionNo')}{index !== undefined ? String(index + 1).padStart(2, '0') : (gallery.id === 'default' ? '12' : gallery.id)}
                         </Typography>
                         <Typography
                             variant="h2"
@@ -346,21 +349,21 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                                 fontStyle: 'italic'
                                             }}
                                         >
-                                            by {authorName}
+                                            {t('galleryCarousel.by')}{authorName}
                                         </Typography>
                                     </Box>
 
                                     <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
                                         <Box>
-                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Exposure</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('galleryCarousel.exposure')}</Typography>
                                             <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.exposure || 'N/A'}</Typography>
                                         </Box>
                                         <Box>
-                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>ISO</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('galleryCarousel.iso')}</Typography>
                                             <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.iso || 'N/A'}</Typography>
                                         </Box>
                                         <Box>
-                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Lens</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('galleryCarousel.lens')}</Typography>
                                             <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.lens || 'N/A'}</Typography>
                                         </Box>
                                     </Box>

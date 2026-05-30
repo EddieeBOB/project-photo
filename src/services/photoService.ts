@@ -184,7 +184,7 @@ export async function createGallery(galleryTitle: string, userId: string, galler
         for (const photo of gallery.photos) {
             const photoId = ID.unique();
             photoIds.push(photoId);
-            const imageId = await createImage(photo, photoId, userId, guuid);
+            const imageId = await createImage(photo, photoId, guuid);
             if (imageId) {
                 uploadedFileIds.push(imageId);
             }
@@ -234,7 +234,7 @@ export async function createGallery(galleryTitle: string, userId: string, galler
  * @param userId - The ID of the currently logged-in user
  * @param galleryId - The ID of the parent gallery document
  */
-export async function createImage(item: Photo, uuid: string, userId: string, galleryId: string) {
+export async function createImage(item: Photo, uuid: string, galleryId: string) {
     if (!item.file) return null;
 
     // Await the image upload first to get the string ID back!

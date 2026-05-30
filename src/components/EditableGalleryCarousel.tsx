@@ -9,6 +9,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
+import { useTranslation } from 'react-i18next';
+
 import { colors, typography, PrimaryButton } from '../theme';
 import { createGallery, processFiles } from '../services/photoService';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,6 +79,7 @@ interface EditableGalleryCarouselProps {
 }
 
 export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGalleryCarouselProps) {
+    const { t } = useTranslation();
     const { user, loading } = useAuth();
 
     const [activeIndex, setActiveIndex] = React.useState(0);
@@ -440,7 +443,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                 letterSpacing: '-0.01em'
                             }}
                         >
-                            Drop photos here
+                            {t('editableGallery.dropPhotos')}
                         </Typography>
                         <Typography
                             sx={{
@@ -450,7 +453,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                 letterSpacing: '0.02em'
                             }}
                         >
-                            Release to add them to your curated exhibition
+                            {t('editableGallery.releaseToAdd')}
                         </Typography>
                     </Box>
                 </Box>
@@ -471,7 +474,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                 mb: 2
                             }}
                         >
-                            STUDIO | UPLOAD AND CREATE
+                            {t('editableGallery.studioUpload')}
                         </Typography>
                         <Typography
                             variant="h2"
@@ -643,7 +646,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                                 </svg>
                                                 <Typography sx={{ fontFamily: typography.ui, fontSize: '14px', color: colors.textSecondary, letterSpacing: '0.05em' }}>
-                                                    CLICK TO UPLOAD
+                                                    {t('editableGallery.clickToUpload')}
                                                 </Typography>
                                             </ButtonBase>
                                         </label>
@@ -694,7 +697,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     <polyline points="3 6 5 6 21 6"></polyline>
                                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                                 </svg>
-                                                <span>Delete</span>
+                                                <span>{t('editableGallery.delete')}</span>
                                             </IconButton>
                                         </Box>
 
@@ -719,7 +722,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
 
                                             <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
                                                 <Box>
-                                                    <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Exposure</Typography>
+                                                    <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('editableGallery.exposure')}</Typography>
                                                     <Box sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>
                                                         <EditableInput
                                                             value={item.metadata.exposure}
@@ -729,7 +732,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     </Box>
                                                 </Box>
                                                 <Box>
-                                                    <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>ISO</Typography>
+                                                    <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('editableGallery.iso')}</Typography>
                                                     <Box sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>
                                                         <EditableInput
                                                             value={item.metadata.iso}
@@ -739,7 +742,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     </Box>
                                                 </Box>
                                                 <Box>
-                                                    <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Lens</Typography>
+                                                    <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('editableGallery.lens')}</Typography>
                                                     <Box sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>
                                                         <EditableInput
                                                             value={item.metadata.lens}

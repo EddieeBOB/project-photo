@@ -14,6 +14,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Typography from '@mui/material/Typography';
 import Menu from '@mui/material/Menu';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 import { account } from '../lib/appwrite';
@@ -73,6 +74,7 @@ const NavButton = styled(Button)({
 const navItems = ['Gallery', 'Journal', 'About'];
 
 export default function NavBar() {
+    const { t } = useTranslation();
     const [open, setOpen] = React.useState(false);
     const { user, checkAuth } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -127,7 +129,7 @@ export default function NavBar() {
                                 cursor: 'pointer',
                             }}
                         >
-                            Frame
+                            {t('nav.frame')}
                         </Typography>
                         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
                             {navItems.map((item) => (
@@ -196,7 +198,7 @@ export default function NavBar() {
                                 >
                                     <Box sx={{ px: 2, py: 1.5 }}>
                                         <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
-                                            Account
+                                            {t('nav.account')}
                                         </Typography>
                                         <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
                                             {user.name || user.email}
@@ -204,20 +206,20 @@ export default function NavBar() {
                                     </Box>
                                     <Divider sx={{ borderColor: colors.borderLight }} />
                                     <MenuItem onClick={() => navigate('/studio')}>
-                                        Studio Workspace
+                                        {t('nav.studioWorkspace')}
                                     </MenuItem>
                                     <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                                        Log Out
+                                        {t('nav.logOut')}
                                     </MenuItem>
                                 </Menu>
                             </>
                         ) : (
                             <>
                                 <SecondaryButton size="small" disableRipple onClick={() => navigate('/login')}>
-                                    Log In
+                                    {t('nav.logIn')}
                                 </SecondaryButton>
                                 <PrimaryButton size="small" disableRipple onClick={() => navigate('/signup')}>
-                                    Sign Up
+                                    {t('nav.signUp')}
                                 </PrimaryButton>
                             </>
                         )}
@@ -262,7 +264,7 @@ export default function NavBar() {
                                     <>
                                         <Box sx={{ px: 2, pb: 2 }}>
                                             <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
-                                                Account
+                                                {t('nav.account')}
                                             </Typography>
                                             <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
                                                 {user.name || user.email}
@@ -273,7 +275,7 @@ export default function NavBar() {
                                                 setOpen(false);
                                                 navigate('/studio');
                                             }}>
-                                                Studio Workspace
+                                                {t('nav.studioWorkspace')}
                                             </PrimaryButton>
                                         </MenuItem>
                                         <MenuItem sx={{ p: 0 }}>
@@ -281,7 +283,7 @@ export default function NavBar() {
                                                 setOpen(false);
                                                 handleLogout();
                                             }} sx={{ color: 'error.main' }}>
-                                                Log Out
+                                                {t('nav.logOut')}
                                             </SecondaryButton>
                                         </MenuItem>
                                     </>
@@ -292,7 +294,7 @@ export default function NavBar() {
                                                 setOpen(false);
                                                 navigate('/signup');
                                             }}>
-                                                Sign Up
+                                                {t('nav.signUp')}
                                             </PrimaryButton>
                                         </MenuItem>
                                         <MenuItem sx={{ p: 0 }}>
@@ -300,7 +302,7 @@ export default function NavBar() {
                                                 setOpen(false);
                                                 navigate('/login');
                                             }}>
-                                                Log In
+                                                {t('nav.logIn')}
                                             </SecondaryButton>
                                         </MenuItem>
                                     </>

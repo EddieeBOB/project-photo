@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField, { type TextFieldProps } from '@mui/material/TextField';
+import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { handleSignUp as handleSignUpService } from '../services/signupService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,6 +38,7 @@ const StyledTextField = styled(TextField)({
 });
 
 export default function SignUp() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -97,7 +99,7 @@ export default function SignUp() {
                             mb: 2
                         }}
                     >
-                        Join Frame.
+                        {t('signup.joinFrame')}
                     </Typography>
                     <Typography
                         variant="body1"
@@ -107,7 +109,7 @@ export default function SignUp() {
                             mb: 6
                         }}
                     >
-                        Create an account to curate your collection.
+                        {t('signup.createAccount')}
                     </Typography>
 
                     <form onSubmit={handleSignUp}>
@@ -140,16 +142,16 @@ export default function SignUp() {
                                 error={password.length > 0 && password.length < 8}
                             />
                             <PrimaryButton type="submit" fullWidth disableRipple sx={{ mt: 2 }}>
-                                Sign Up
+                                {t('nav.signUp')}
                             </PrimaryButton>
                         </Box>
                     </form>
 
                     <Box sx={{ mt: 4, textAlign: 'center' }}>
                         <Typography variant="body2" sx={{ fontFamily: typography.ui, color: colors.textSecondary }}>
-                            Already have an account?{' '}
+                            {t('signup.alreadyHaveAccount')}{' '}
                             <Link to="/login" style={{ color: colors.primary, textDecoration: 'none', fontWeight: 500 }}>
-                                Log In
+                                {t('nav.logIn')}
                             </Link>
                         </Typography>
                     </Box>
