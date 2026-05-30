@@ -3,6 +3,7 @@ import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
+import IconButton from '@mui/material/IconButton';
 
 import { colors, typography } from '../theme';
 import type { Gallery, CarouselPhoto } from './EditableGalleryCarousel';
@@ -10,6 +11,9 @@ import type { Gallery, CarouselPhoto } from './EditableGalleryCarousel';
 export interface GalleryCarouselProps {
     gallery?: Gallery & { photos: CarouselPhoto[] };
     authorName?: string;
+    index?: number;
+    onDelete?: (galleryId: string) => void;
+    disableHeaderPadding?: boolean;
 }
 
 export const defaultGallery: Gallery & { photos: CarouselPhoto[] } = {
@@ -50,134 +54,320 @@ const ProgressBar = styled(Box, {
     transition: 'background-color 0.3s ease',
 }));
 
-export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen' }: GalleryCarouselProps) {
+export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, disableHeaderPadding }: GalleryCarouselProps) {
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
+    const [confirmDelete, setConfirmDelete] = React.useState(false);
+
+    React.useEffect(() => {
+        if (confirmDelete) {
+            const timer = setTimeout(() => setConfirmDelete(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [confirmDelete]);
 
     const displayItems = (gallery.photos as CarouselPhoto[]).filter(photo => !photo.isNew);
 
-    const handleScroll = () => {
+    const handlePrev = () => {
         if (scrollRef.current) {
-            const scrollPosition = scrollRef.current.scrollLeft;
-            const itemWidth = scrollRef.current.clientWidth;
-            // Add a small threshold so it doesn't jump too eagerly
-            const newIndex = Math.round(scrollPosition / itemWidth);
-            setActiveIndex(newIndex);
+            const children = Array.from(scrollRef.current.children) as HTMLElement[];
+            const prevIndex = Math.max(activeIndex - 1, 0);
+            const targetChild = children[prevIndex];
+            if (targetChild) {
+                const targetScrollLeft = targetChild.offsetLeft + targetChild.offsetWidth / 2 - scrollRef.current.clientWidth / 2;
+                scrollRef.current.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+            }
         }
     };
 
+    const handleNext = () => {
+        if (scrollRef.current) {
+            const children = Array.from(scrollRef.current.children) as HTMLElement[];
+            const nextIndex = Math.min(activeIndex + 1, children.length - 1);
+            const targetChild = children[nextIndex];
+            if (targetChild) {
+                const targetScrollLeft = targetChild.offsetLeft + targetChild.offsetWidth / 2 - scrollRef.current.clientWidth / 2;
+                scrollRef.current.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+            }
+        }
+    };
+
+    const scrollRaf = React.useRef<number>(0);
+
+    const handleScroll = React.useCallback(() => {
+        cancelAnimationFrame(scrollRaf.current);
+        scrollRaf.current = requestAnimationFrame(() => {
+            if (scrollRef.current) {
+                const scrollPosition = scrollRef.current.scrollLeft;
+                const containerWidth = scrollRef.current.clientWidth;
+                const children = Array.from(scrollRef.current.children) as HTMLElement[];
+                if (children.length === 0) return;
+
+                let closestIndex = 0;
+                let minDistance = Infinity;
+
+                children.forEach((child, index) => {
+                    const childCenter = child.offsetLeft + child.offsetWidth / 2;
+                    const viewportCenter = scrollPosition + containerWidth / 2;
+                    const distance = Math.abs(childCenter - viewportCenter);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestIndex = index;
+                    }
+                });
+
+                setActiveIndex(closestIndex);
+            }
+        });
+    }, []);
+
+    React.useEffect(() => {
+        return () => cancelAnimationFrame(scrollRaf.current);
+    }, []);
+
     return (
-        <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: '#F9F9F9' }}>
+        <Box sx={{ 
+            pt: disableHeaderPadding 
+                ? { xs: 2, md: 2 } 
+                : (index !== undefined && index > 0 ? { xs: 4, md: 6 } : { xs: 12, md: 12 }), 
+            pb: { xs: 2, md: 0 }, 
+            backgroundColor: '#F9F9F9' 
+        }}>
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
 
                 {/* Header */}
-                <Box sx={{ mb: 6, mt: 5 }}>
-                    <Typography
-                        sx={{
-                            fontFamily: typography.ui,
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            letterSpacing: '0.1em',
-                            color: colors.textSecondary,
-                            textTransform: 'uppercase',
-                            mb: 1
-                        }}
-                    >
-                        EXHIBITION NO. {gallery.id === 'default' ? '12' : gallery.id.slice(-4).toUpperCase()}
-                    </Typography>
-                    <Typography
-                        variant="h2"
-                        sx={{
-                            fontFamily: typography.headline,
-                            fontSize: { xs: '36px', md: '48px' },
-                            fontWeight: 400,
-                            color: colors.text,
-                            letterSpacing: '-0.02em'
-                        }}
-                    >
-                        {gallery.title || (gallery as any).galleryTitle || 'Untitled Exhibition'}
-                    </Typography>
-                </Box>
-
-                {/* Carousel Container */}
-                <Box
-                    ref={scrollRef}
-                    onScroll={handleScroll}
-                    sx={{
-                        display: 'flex',
-                        overflowX: 'auto',
-                        scrollSnapType: 'x mandatory',
-                        scrollbarWidth: 'none',
-                        '&::-webkit-scrollbar': { display: 'none' },
-                        gap: 4,
-                        pb: 2
-                    }}
-                >
-                    {displayItems.map((item) => (
-                        <Box
-                            key={item.id}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 0.5, mt: disableHeaderPadding ? 0 : 5, flexWrap: 'wrap', gap: 2 }}>
+                    <Box>
+                        <Typography
                             sx={{
-                                minWidth: { xs: '100%', md: '85%' },
-                                scrollSnapAlign: 'center',
-                                border: `1px solid ${colors.borderLight}`,
-                                backgroundColor: colors.onPrimary,
-                                p: { xs: 2, md: 3 },
-                                display: 'flex',
-                                flexDirection: 'column'
+                                fontFamily: typography.ui,
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                letterSpacing: '0.1em',
+                                color: colors.textSecondary,
+                                textTransform: 'uppercase',
+                                mb: 1
                             }}
                         >
-                            {/* Image */}
-                            <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3 }}>
-                                <img
-                                    src={item.src}
-                                    alt={item.title}
-                                    crossOrigin="anonymous"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            </Box>
+                            EXHIBITION NO. {index !== undefined ? String(index + 1).padStart(2, '0') : (gallery.id === 'default' ? '12' : gallery.id)}
+                        </Typography>
+                        <Typography
+                            variant="h2"
+                            sx={{
+                                fontFamily: typography.headline,
+                                fontSize: { xs: '36px', md: '48px' },
+                                fontWeight: 400,
+                                color: colors.text,
+                                letterSpacing: '-0.02em'
+                            }}
+                        >
+                            {gallery.title || 'Untitled Exhibition'}
+                        </Typography>
+                    </Box>
+                    {onDelete && gallery.id !== 'default' && (
+                        <IconButton
+                            onClick={() => {
+                                if (confirmDelete) {
+                                    onDelete(gallery.id);
+                                    setConfirmDelete(false);
+                                } else {
+                                    setConfirmDelete(true);
+                                }
+                            }}
+                            aria-label="delete gallery"
+                            sx={{
+                                backgroundColor: confirmDelete ? '#ff4d4f' : 'transparent',
+                                border: `1px solid ${confirmDelete ? '#ff4d4f' : colors.borderLight}`,
+                                borderRadius: '0px',
+                                p: '8px 12px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                fontFamily: typography.ui,
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                                display: 'flex',
+                                gap: 1,
+                                alignItems: 'center',
+                                color: confirmDelete ? colors.onPrimary : colors.textSecondary,
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    backgroundColor: '#ff4d4f',
+                                    borderColor: '#ff4d4f',
+                                    color: colors.onPrimary,
+                                }
+                            }}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>{confirmDelete ? 'Confirm Delete?' : 'Delete Gallery'}</span>
+                        </IconButton>
+                    )}
+                </Box>
 
-                            {/* Footer of Card */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 3 }}>
-                                <Box>
-                                    <Typography
-                                        sx={{
-                                            fontFamily: typography.headline,
-                                            fontSize: { xs: '20px', md: '24px' },
-                                            color: colors.text,
-                                            mb: 0.5
-                                        }}
-                                    >
-                                        {item.title}
-                                    </Typography>
-                                    <Typography
-                                        sx={{
-                                            fontFamily: typography.ui,
-                                            fontSize: '14px',
-                                            color: colors.textSecondary,
-                                            fontStyle: 'italic'
-                                        }}
-                                    >
-                                        by {authorName}
-                                    </Typography>
+                {/* Carousel Container Wrapper with Relative Position */}
+                <Box sx={{ position: 'relative' }}>
+                    {/* Previous Button */}
+                    <IconButton
+                        onClick={handlePrev}
+                        disabled={activeIndex === 0}
+                        sx={{
+                            position: 'absolute',
+                            left: { xs: '8px', md: '-24px' },
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(8px)',
+                            border: `1px solid ${colors.borderLight}`,
+                            borderRadius: '0px',
+                            p: 1.5,
+                            color: colors.text,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                backgroundColor: colors.text,
+                                color: colors.onPrimary,
+                                borderColor: colors.text,
+                            },
+                            '&.Mui-disabled': {
+                                opacity: 0,
+                                pointerEvents: 'none'
+                            }
+                        }}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                    </IconButton>
+
+                    {/* Next Button */}
+                    <IconButton
+                        onClick={handleNext}
+                        disabled={activeIndex === displayItems.length - 1}
+                        sx={{
+                            position: 'absolute',
+                            right: { xs: '8px', md: '-24px' },
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(8px)',
+                            border: `1px solid ${colors.borderLight}`,
+                            borderRadius: '0px',
+                            p: 1.5,
+                            color: colors.text,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                backgroundColor: colors.text,
+                                color: colors.onPrimary,
+                                borderColor: colors.text,
+                            },
+                            '&.Mui-disabled': {
+                                opacity: 0,
+                                pointerEvents: 'none'
+                            }
+                        }}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                    </IconButton>
+
+                    {/* Carousel Container */}
+                    <Box
+                        ref={scrollRef}
+                        onScroll={handleScroll}
+                        sx={{
+                            display: 'flex',
+                            overflowX: 'auto',
+                            overscrollBehaviorX: 'none',
+                            scrollSnapType: 'x mandatory',
+                            scrollbarWidth: 'none',
+                            '&::-webkit-scrollbar': { display: 'none' },
+                            gap: 4,
+                            pb: 2,
+                            '&::before': {
+                                content: '""',
+                                flex: '0 0 auto',
+                                width: { xs: 0, md: 'calc(7.5% - 32px)' }
+                            },
+                            '&::after': {
+                                content: '""',
+                                flex: '0 0 auto',
+                                width: { xs: 0, md: 'calc(7.5% - 32px)' }
+                            }
+                        }}
+                    >
+                        {displayItems.map((item) => (
+                            <Box
+                                key={item.id}
+                                sx={{
+                                    minWidth: { xs: '100%', md: '85%' },
+                                    scrollSnapAlign: 'center',
+                                    border: `1px solid ${colors.borderLight}`,
+                                    backgroundColor: colors.onPrimary,
+                                    p: { xs: 2, md: 3 },
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}
+                            >
+                                {/* Image */}
+                                <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3 }}>
+                                    <img
+                                        src={item.src}
+                                        alt={item.title}
+                                        crossOrigin="anonymous"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
                                 </Box>
 
-                                <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
+                                {/* Footer of Card */}
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 3 }}>
                                     <Box>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Exposure</Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.exposure || 'N/A'}</Typography>
+                                        <Typography
+                                            sx={{
+                                                fontFamily: typography.headline,
+                                                fontSize: { xs: '20px', md: '24px' },
+                                                color: colors.text,
+                                                mb: 0.5
+                                            }}
+                                        >
+                                            {item.title}
+                                        </Typography>
+                                        <Typography
+                                            sx={{
+                                                fontFamily: typography.ui,
+                                                fontSize: '14px',
+                                                color: colors.textSecondary,
+                                                fontStyle: 'italic'
+                                            }}
+                                        >
+                                            by {authorName}
+                                        </Typography>
                                     </Box>
-                                    <Box>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>ISO</Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.iso || 'N/A'}</Typography>
-                                    </Box>
-                                    <Box>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Lens</Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.lens || 'N/A'}</Typography>
+
+                                    <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
+                                        <Box>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Exposure</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.exposure || 'N/A'}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>ISO</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.iso || 'N/A'}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>Lens</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.lens || 'N/A'}</Typography>
+                                        </Box>
                                     </Box>
                                 </Box>
                             </Box>
-                        </Box>
-                    ))}
+                        ))}
+                    </Box>
                 </Box>
 
                 {/* Dots */}

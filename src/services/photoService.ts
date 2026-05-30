@@ -1,10 +1,109 @@
-import { ID, Query, Permission, Role } from 'appwrite';
+import { ID, Query, type Models } from 'appwrite';
 import { tablesDB, storage } from '../lib/appwrite';
 import pica from 'pica';
-import type { Gallery, Photo } from '../components/EditableGalleryCarousel';
+import type { Gallery, Photo, CarouselPhoto } from '../components/EditableGalleryCarousel';
+import exifr from 'exifr';
+
 
 const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+
+/**
+ * Processes an array of File objects and maps them to CarouselPhoto objects.
+ * Filters out non-image files and assigns default metadata, preview URLs,
+ * and sets the default title using the file name without extension.
+ * 
+ * @param files - Array of File objects
+ * @returns Array of CarouselPhoto objects
+ */
+export async function processFiles(files: File[]): Promise<CarouselPhoto[]> {
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    const photoPromises = imageFiles.map(async (file, idx) => {
+        const previewUrl = URL.createObjectURL(file);
+        const title = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const metadata = await getPhotoMetadata(file);
+        return {
+            id: `${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 9)}`,
+            src: previewUrl,
+            title: title,
+            description: '',
+            metadata: metadata,
+            file: file
+        };
+    });
+    return Promise.all(photoPromises);
+}
+
+/**
+ * Extracts EXIF metadata (exposure, ISO, lens) from an image file using exifr.
+ * 
+ * @param file - The image File object
+ * @returns A Promise that resolves to the metadata object containing exposure, iso, and lens
+ */
+export async function getPhotoMetadata(file: File) {
+    const defaultMetadata = {
+        exposure: '',
+        iso: '',
+        lens: ''
+    };
+
+    try {
+        const exifData = await exifr.parse(file);
+        if (!exifData) {
+            return defaultMetadata;
+        }
+
+        const exposureTime = exifData.ExposureTime;
+        const fNumber = exifData.FNumber;
+        const isoValue = exifData.ISO ?? exifData.ISOSpeedRatings;
+        const lensModel = exifData.LensModel;
+        const focalLength = exifData.FocalLength;
+
+        // Format exposure
+        let shutterSpeed = '';
+        if (exposureTime !== undefined && exposureTime !== null) {
+            if (exposureTime < 1) {
+                const denominator = Math.round(1 / exposureTime);
+                shutterSpeed = `1/${denominator}`;
+            } else {
+                shutterSpeed = `${exposureTime}s`;
+            }
+        }
+
+        let aperture = '';
+        if (fNumber !== undefined && fNumber !== null) {
+            aperture = `f/${fNumber}`;
+        }
+
+        let exposure = '';
+        if (shutterSpeed && aperture) {
+            exposure = `${shutterSpeed} · ${aperture}`;
+        } else if (shutterSpeed) {
+            exposure = shutterSpeed;
+        } else if (aperture) {
+            exposure = aperture;
+        }
+
+        // Format ISO
+        const iso = isoValue !== undefined && isoValue !== null ? String(isoValue) : '';
+
+        // Format lens
+        let lens = lensModel || '';
+        if (!lens && focalLength !== undefined && focalLength !== null) {
+            lens = `${focalLength}mm`;
+        }
+
+        return {
+            exposure,
+            iso,
+            lens
+        };
+    } catch (error) {
+        console.warn("Failed to extract EXIF metadata from file:", file.name, error);
+        return defaultMetadata;
+    }
+}
+
 
 /**
  * Resizes an image file to the specified maximum width while maintaining its aspect ratio.
@@ -22,16 +121,22 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
         img.src = objectUrl;
         img.onload = async () => {
             try {
-                // Calculate height to maintain aspect ratio
-                const scale = width / img.width;
+                if (!img.width) {
+                    reject(new Error("Image loaded with 0 width"));
+                    return;
+                }
+                
+                // Only downscale if the image exceeds target width
+                const targetWidth = img.width > width ? width : img.width;
+                const scale = targetWidth / img.width;
                 const height = Math.round(img.height * scale);
 
                 const canvas = document.createElement('canvas');
-                canvas.width = width;
+                canvas.width = targetWidth;
                 canvas.height = height;
 
                 await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as any);
-                const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg', 1);
+                const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg', 0.85);
 
                 resolve(blob);
             } catch (err) {
@@ -61,15 +166,10 @@ export async function createGallery(galleryTitle: string, userId: string, galler
     // Create UUID for gallery
     const guuid = ID.unique();
     const photoIds: string[] = [];
+    const uploadedFileIds: string[] = [];
 
     //Creates a gallery row in DB
     try {
-        const permissions = [
-            Permission.read(Role.any()),
-            Permission.update(Role.user(userId)),
-            Permission.delete(Role.user(userId)),
-        ];
-
         await tablesDB.createRow({
             databaseId,
             tableId: 'gallery',
@@ -77,15 +177,17 @@ export async function createGallery(galleryTitle: string, userId: string, galler
             data: {
                 galleryTitle: galleryTitle,
                 users: userId,
-            },
-            permissions
+            }
         });
 
         // Create rows for each photo with a dynamically generated UUID
         for (const photo of gallery.photos) {
             const photoId = ID.unique();
             photoIds.push(photoId);
-            await createImage(photo, photoId, userId, guuid);
+            const imageId = await createImage(photo, photoId, userId, guuid);
+            if (imageId) {
+                uploadedFileIds.push(imageId);
+            }
         }
 
         // Now that the photos actually exist in the database, we can safely link them to the gallery!
@@ -99,7 +201,25 @@ export async function createGallery(galleryTitle: string, userId: string, galler
         });
 
     } catch (error) {
-        console.error("Error creating gallery:", error);
+        console.error("Error creating gallery, initiating rollback cleanup...", error);
+        
+        // Rollback: Delete any created photo documents
+        for (const pid of photoIds) {
+            try {
+                await tablesDB.deleteRow({ databaseId, tableId: 'photos', rowId: pid });
+            } catch {}
+        }
+        // Rollback: Delete any uploaded files from storage
+        for (const fid of uploadedFileIds) {
+            try {
+                await storage.deleteFile({ bucketId, fileId: fid });
+            } catch {}
+        }
+        // Rollback: Delete the gallery row
+        try {
+            await tablesDB.deleteRow({ databaseId, tableId: 'gallery', rowId: guuid });
+        } catch {}
+        
         throw error;
     }
 
@@ -115,34 +235,42 @@ export async function createGallery(galleryTitle: string, userId: string, galler
  * @param galleryId - The ID of the parent gallery document
  */
 export async function createImage(item: Photo, uuid: string, userId: string, galleryId: string) {
-    if (!item.file) return;
+    if (!item.file) return null;
 
     // Await the image upload first to get the string ID back!
-    const imageId = await uploadImage(item.file, userId);
+    const imageId = await uploadImage(item.file);
 
-    const permissions = [
-        Permission.read(Role.any()),
-        Permission.update(Role.user(userId)),
-        Permission.delete(Role.user(userId)),
-    ];
-
-    // Await the creation of the row
-    await tablesDB.createRow({
-        databaseId,
-        tableId: 'photos',
-        rowId: uuid,
-        data: {
-            title: item.title,
-            description: item.description,
-            exposure: item.metadata.exposure,
-            iso: item.metadata.iso,
-            lens: item.metadata.lens,
-            isFrontPage: false,
-            imageId: imageId,
-            gallery: galleryId
-        },
-        permissions
-    });
+    try {
+        // Await the creation of the row
+        await tablesDB.createRow({
+            databaseId,
+            tableId: 'photos',
+            rowId: uuid,
+            data: {
+                title: item.title,
+                description: item.description,
+                exposure: item.metadata.exposure,
+                iso: item.metadata.iso,
+                lens: item.metadata.lens,
+                isFrontPage: false,
+                imageId: imageId,
+                gallery: galleryId
+            }
+        });
+        
+        return imageId;
+    } catch (error) {
+        // Clean up the uploaded storage file if the DB document write fails
+        try {
+            await storage.deleteFile({
+                bucketId,
+                fileId: imageId
+            });
+        } catch (cleanupError) {
+            console.error(`Failed to clean up storage file ${imageId} after DB error:`, cleanupError);
+        }
+        throw error;
+    }
 }
 
 
@@ -155,7 +283,7 @@ export async function createImage(item: Photo, uuid: string, userId: string, gal
  * @param userId - The ID of the currently logged-in user (for setting permissions)
  * @returns A Promise that resolves to the Appwrite storage file ID (buuid)
  */
-export async function uploadImage(file: File | Blob, userId: string) {
+export async function uploadImage(file: File | Blob) {
     try {
         // 1. Resize Image if it is a File (and not already resized/blob)
         let fileToUpload: File;
@@ -166,20 +294,13 @@ export async function uploadImage(file: File | Blob, userId: string) {
             fileToUpload = new File([file], 'image.jpg', { type: file.type || 'image/jpeg' });
         }
 
-        const permissions = [
-            Permission.read(Role.any()),
-            Permission.update(Role.user(userId)),
-            Permission.delete(Role.user(userId)),
-        ];
-
         // 2. Upload the actual image to your bucket
         const buuid = ID.unique();
 
         await storage.createFile({
             bucketId,
             fileId: buuid,
-            file: fileToUpload,
-            permissions
+            file: fileToUpload
         });
         return buuid;
     } catch (error) {
@@ -195,15 +316,41 @@ export async function uploadImage(file: File | Blob, userId: string) {
  * @param width - The maximum width of the generated preview image
  * @returns An object containing the preview URL
  */
-export function retrieveImageURL(fileId: string, width: number) {
+export function retrieveImageURL(fileId: string, width: number): string {
     const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
     const result = storage.getFilePreview({
         bucketId,
         fileId,
         width,
-        quality: 100
+        quality: width <= 500 ? 80 : 90
     });
-    return result;
+    return result.toString();
+}
+
+export function mapGalleryToCarousel(
+    fetchedGallery: Models.Document & { galleryTitle?: string; photos?: any[] },
+    userId: string
+): any {
+    if (!fetchedGallery || !fetchedGallery.photos || fetchedGallery.photos.length === 0) return null;
+
+    const mappedPhotos = fetchedGallery.photos.map((photo: any) => ({
+        id: photo.$id,
+        src: retrieveImageURL(photo.imageId, 1200),
+        title: photo.title || '',
+        description: photo.description,
+        metadata: {
+            exposure: photo.exposure || 'N/A',
+            iso: photo.iso || 'N/A',
+            lens: photo.lens || 'N/A'
+        }
+    }));
+
+    return {
+        id: fetchedGallery.$id,
+        title: fetchedGallery.galleryTitle || "Untitled Exhibition",
+        userId,
+        photos: mappedPhotos
+    };
 }
 
 /**
@@ -229,15 +376,28 @@ export async function fetchFeaturedArtist() {
             ]
         });
 
-        const title = response.rows[0].title;
-        const firstName = response.rows[0]?.gallery?.users?.firstName;
-        const lastName = response.rows[0]?.gallery?.users?.lastName;
-        const imageUrl = retrieveImageURL(response.rows[0]?.imageId, 500);
+        if (!response.rows || response.rows.length === 0) {
+            return null;
+        }
+
+        const row = response.rows[0];
+        const title = row?.title ?? 'Untitled';
+        const firstName = row?.gallery?.users?.firstName;
+        const lastName = row?.gallery?.users?.lastName;
+        const imageId = row?.imageId;
+
+        if (!imageId) {
+            console.warn("Featured photo has no imageId, skipping.");
+            return null;
+        }
+
+        const name = [firstName, lastName].filter(Boolean).join(' ') || 'Anonymous Artist';
+        const imageUrl = retrieveImageURL(imageId, 500);
 
         return {
-            name: `${firstName} ${lastName}`,
+            name,
             title: `"${title}"`,
-            imageUrl: imageUrl
+            imageUrl
         };
     } catch (error) {
         console.error("Failed to fetch featured artist:", error);
@@ -263,4 +423,102 @@ export async function fetchUserGallery(userId: string) {
         ]
     })
     return (response.rows[0]);
+}
+
+/**
+ * Deletes a single photo document and its corresponding file in storage.
+ * 
+ * @param photoId - The database row ID of the photo
+ */
+export async function deletePhoto(photoId: string) {
+    try {
+        // 1. Fetch photo row to get imageId (storage file ID)
+        const photo = await tablesDB.getRow({
+            databaseId,
+            tableId: 'photos',
+            rowId: photoId
+        });
+
+        // 2. Clean up file in storage if it exists
+        if (photo?.imageId) {
+            try {
+                await storage.deleteFile({
+                    bucketId,
+                    fileId: photo.imageId
+                });
+            } catch (err) {
+                console.warn(`Failed to delete storage file ${photo.imageId}:`, err);
+            }
+        }
+
+        // 3. Delete photo row from database
+        await tablesDB.deleteRow({
+            databaseId,
+            tableId: 'photos',
+            rowId: photoId
+        });
+    } catch (error) {
+        console.error("Error deleting photo:", error);
+        throw error;
+    }
+}
+
+/**
+ * Deletes a gallery row, including all associated photos and files from storage.
+ * 
+ * @param galleryId - The ID of the gallery to delete
+ */
+export async function deleteGallery(galleryId: string) {
+    try {
+        // 1. Fetch all photos associated with this gallery
+        const allPhotos: any[] = [];
+        let offset = 0;
+        
+        while (true) {
+            const response = await tablesDB.listRows({
+                databaseId,
+                tableId: 'photos',
+                queries: [
+                    Query.equal('gallery', galleryId),
+                    Query.limit(100),
+                    Query.offset(offset)
+                ]
+            });
+            
+            allPhotos.push(...response.rows);
+            
+            if (response.rows.length < 100) break;
+            offset += 100;
+        }
+
+        // 2. Delete all files from storage and photo rows in parallel
+        const deletePromises = allPhotos.map(async (photo: any) => {
+            if (photo.imageId) {
+                try {
+                    await storage.deleteFile({
+                        bucketId,
+                        fileId: photo.imageId
+                    });
+                } catch (err) {
+                    console.warn(`[deleteGallery] Failed to delete storage file ${photo.imageId}:`, err);
+                }
+            }
+            await tablesDB.deleteRow({
+                databaseId,
+                tableId: 'photos',
+                rowId: photo.$id
+            });
+        });
+        await Promise.all(deletePromises);
+
+        // 3. Delete gallery row from database
+        await tablesDB.deleteRow({
+            databaseId,
+            tableId: 'gallery',
+            rowId: galleryId
+        });
+    } catch (error) {
+        console.error("[deleteGallery] Error:", error);
+        throw error;
+    }
 }

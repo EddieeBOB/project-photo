@@ -22,7 +22,10 @@ const FooterLink = styled(Link)({
 const SocialIcon = () => (
     <Box
         component="a"
-        href="#"
+        href="https://instagram.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Visit our Instagram page"
         sx={{
             color: colors.textSecondary,
             display: 'flex',
