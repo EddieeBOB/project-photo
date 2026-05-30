@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
-import { fetchFeaturedArtist } from '../services/photoService';
+import { fetchFeaturedArtist, getHeroPhoto } from '../services/photoService';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
@@ -89,7 +89,7 @@ export default function Hero() {
                                 }}
                             >
                                 <img
-                                    src={artistData?.imageUrl || "/public/assets/hero.jpg"}
+                                    src={artistData?.imageUrl || getHeroPhoto()}
                                     alt="Luminous Gallery Interior"
                                     style={{
                                         width: '100%',

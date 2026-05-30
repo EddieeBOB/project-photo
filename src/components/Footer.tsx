@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
+import Dialog from '@mui/material/Dialog';
 import { useTranslation } from 'react-i18next';
 
 import { colors, typography } from '../theme';
+import PrivacyPolicy from './PrivacyPolicy';
 
 const FooterLink = styled(Link)({
     color: colors.textSecondary,
@@ -44,6 +47,7 @@ const SocialIcon = () => (
 
 export default function Footer() {
     const { t } = useTranslation();
+    const [privacyOpen, setPrivacyOpen] = useState(false);
 
     return (
         <Box sx={{ borderTop: `1px solid ${colors.borderLight}`, backgroundColor: '#F9F9F9', py: 3 }}>
@@ -76,8 +80,7 @@ export default function Footer() {
                         <FooterLink href="#">{t('footer.journal')}</FooterLink>
                         <FooterLink href="#">{t('footer.exhibitions')}</FooterLink>
                         <FooterLink href="#">{t('footer.artists')}</FooterLink>
-                        <FooterLink href="#">{t('footer.privacy')}</FooterLink>
-                        <FooterLink href="#">{t('footer.terms')}</FooterLink>
+                        <FooterLink href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setPrivacyOpen(true); }}>{t('footer.privacy')}</FooterLink>
                     </Box>
 
                     {/* Socials / Language */}
@@ -96,6 +99,23 @@ export default function Footer() {
                     </Typography>
                 </Box>
             </Container>
+
+            <Dialog
+                open={privacyOpen}
+                onClose={() => setPrivacyOpen(false)}
+                maxWidth="md"
+                fullWidth
+                scroll="paper"
+                sx={{
+                    '& .MuiDialog-paper': {
+                        borderRadius: '0px',
+                        border: `1px solid ${colors.borderLight}`,
+                        backgroundColor: colors.surfaceBright,
+                    }
+                }}
+            >
+                <PrivacyPolicy onClose={() => setPrivacyOpen(false)} />
+            </Dialog>
         </Box>
     );
 }

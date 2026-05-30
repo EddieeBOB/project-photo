@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { handleSignUp as handleSignUpService } from '../services/signupService';
 import { useAuth } from '../contexts/AuthContext';
+import { getSignupPhoto } from '../services/photoService';
 
 import { colors, typography, PrimaryButton } from '../theme';
 
@@ -66,7 +67,7 @@ export default function SignUp() {
                 position: 'relative'
             }}>
                 <img
-                    src="/public/assets/signup.jpg"
+                    src={getSignupPhoto()}
                     alt="Luminous Editorial Image"
                     style={{
                         position: 'absolute',

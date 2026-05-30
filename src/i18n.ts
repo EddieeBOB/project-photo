@@ -63,7 +63,6 @@ const resources = {
         "exhibitions": "Exhibitions",
         "artists": "Artists",
         "privacy": "Privacy",
-        "terms": "Terms",
         "designSystem": "Luminous Editorial Design System"
       }
     }

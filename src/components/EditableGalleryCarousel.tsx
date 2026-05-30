@@ -84,6 +84,8 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
 
     const [activeIndex, setActiveIndex] = React.useState(0);
     const [isPublishing, setIsPublishing] = React.useState(false);
+    const [uploadProgress, setUploadProgress] = React.useState<{ current: number; total: number } | null>(null);
+    const [isPublicDraft, setIsPublicDraft] = React.useState(false);
     const [exhibitionTitle, setExhibitionTitle] = React.useState("Untitled Gallery");
     const [toastMsg, setToastMsg] = React.useState<{text: string, type: 'error' | 'success'} | null>(null);
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -327,7 +329,11 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                 }))
             };
 
-            await createGallery(exhibitionTitle, userId, galleryToUpload);
+            setUploadProgress({ current: 0, total: galleryToUpload.photos.length });
+
+            await createGallery(exhibitionTitle, userId, galleryToUpload, isPublicDraft, (current: number, total: number) => {
+                setUploadProgress({ current, total });
+            });
 
             setToastMsg({text: "Successfully published all photos!", type: 'success'});
 
@@ -339,6 +345,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
             });
 
             setExhibitionTitle("Untitled Title");
+            setIsPublicDraft(false);
             setItems([
                 {
                     id: 'placeholder',
@@ -359,6 +366,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
             setToastMsg({text: "Publish failed. Please try again.", type: 'error'});
         } finally {
             setIsPublishing(false);
+            setUploadProgress(null);
         }
     };
 
@@ -498,23 +506,100 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                         </Typography>
                     </Box>
                     {items.some(item => item.file) && (
-                        <PrimaryButton
-                            onClick={handlePublish}
-                            disabled={isPublishing}
-                            sx={{
-                                height: 'fit-content',
-                                minWidth: '150px'
-                            }}
-                        >
-                            {isPublishing ? (
-                                <>
-                                    <CircularProgress size={16} sx={{ color: 'inherit', mr: 1 }} />
-                                    Publishing...
-                                </>
-                            ) : (
-                                'Publish'
-                            )}
-                        </PrimaryButton>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            {/* Public/Private Selection */}
+                            <IconButton
+                                onClick={() => setIsPublicDraft(!isPublicDraft)}
+                                disabled={isPublishing}
+                                sx={{
+                                    border: `1px solid ${colors.borderLight}`,
+                                    borderRadius: '0px',
+                                    p: '10px 14px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    fontFamily: typography.ui,
+                                    letterSpacing: '0.05em',
+                                    textTransform: 'uppercase',
+                                    display: 'flex',
+                                    gap: 1.5,
+                                    alignItems: 'center',
+                                    color: isPublicDraft ? colors.text : colors.textSecondary,
+                                    borderColor: isPublicDraft ? colors.text : colors.borderLight,
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        borderColor: colors.text,
+                                        color: colors.text,
+                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                    }
+                                }}
+                                aria-label="Toggle gallery visibility"
+                            >
+                                {isPublicDraft ? (
+                                    <>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                        </svg>
+                                        <span>Public</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
+                                        <span>Private</span>
+                                    </>
+                                )}
+                            </IconButton>
+
+                            <PrimaryButton
+                                onClick={handlePublish}
+                                disabled={isPublishing}
+                                sx={{
+                                    height: 'fit-content',
+                                    minWidth: '180px',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&.Mui-disabled': {
+                                        backgroundColor: colors.primary,
+                                        color: colors.onPrimary,
+                                        borderColor: colors.primary,
+                                        opacity: 0.85
+                                    }
+                                }}
+                            >
+                                {isPublishing ? (
+                                    <>
+                                        {uploadProgress && (
+                                            <Box
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    bottom: 0,
+                                                    width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                                                    transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    zIndex: 1
+                                                }}
+                                            />
+                                        )}
+                                        <Box sx={{ zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <CircularProgress size={16} sx={{ color: 'inherit', mr: 1 }} />
+                                            <span>
+                                                {uploadProgress
+                                                    ? `Publishing (${uploadProgress.current}/${uploadProgress.total})...`
+                                                    : 'Publishing...'}
+                                            </span>
+                                        </Box>
+                                    </>
+                                ) : (
+                                    'Publish'
+                                )}
+                            </PrimaryButton>
+                        </Box>
                     )}
                 </Box>
 
