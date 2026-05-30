@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { handleLogin as handleLoginService } from '../services/loginService';
 import { useAuth } from '../contexts/AuthContext';
+import { getLoginPhoto } from '../services/photoService';
 
 import { colors, typography, PrimaryButton } from '../theme';
 
@@ -139,7 +140,7 @@ export default function Login() {
                 position: 'relative'
             }}>
                 <img
-                    src="/public/assets/login.jpg"
+                    src={getLoginPhoto()}
                     alt="Luminous Editorial Image"
                     style={{
                         position: 'absolute',

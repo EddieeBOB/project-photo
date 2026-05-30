@@ -49,21 +49,9 @@ The following features and improvements are planned for upcoming releases:
 * **Concept**: A dedicated digital editorial/journal space for photographers to write articles, share behind-the-scenes stories, and document their creative processes.
 * **Details**: Rich-text authoring workspace, story tags, and layouts designed to highlight long-form writing integrated seamlessly alongside high-resolution visual layouts.
 
-### Updated Terms of Service (TOS)
-* **Concept**: A robust legal and licensing framework for content creators and visitors.
-* **Details**: Clarifications on photographer copyright ownership, public gallery usage rights, client review access guidelines, and updated terms for photo submissions and metadata sharing.
-
 ### Fix Front Page
 * **Concept**: A complete overhaul of the homepage layout and content rendering.
 * **Details**: Transitioning the landing page from static templates to dynamic loading of active/trending galleries, adding a rotating "Artist of the Week" spotlight section, and fine-tuning spacing, loading states, and animations for 4K displays.
-
-### Add Studio Workshop Tab
-* **Concept**: A new education and community hub located directly within the Studio Workspace.
-* **Details**: Integrated tabs for interactive workshops, post-processing guides (lightroom/capture one presets, color theory), and private peer critique forums.
-
-### Add Loading Indications (During Publish)
-* **Concept**: Improved user feedback during gallery curation and publishing.
-* **Details**: Implementation of a high-fidelity full-screen loader, a progress bar tracking image upload batches to Appwrite storage, and validation indicators to prevent users from leaving the page mid-upload.
 
 ### Solidify Website in General
 * **Concept**: Codebase hardening, optimization, and stability improvements.

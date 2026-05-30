@@ -71,12 +71,25 @@ const NavButton = styled(Button)({
     }
 });
 
-const navItems = ['Gallery', 'Journal', 'About'];
-
 export default function NavBar() {
     const { t } = useTranslation();
     const [open, setOpen] = React.useState(false);
-    const { user, checkAuth } = useAuth();
+    const { user, profile, checkAuth } = useAuth();
+
+    const navLinks = React.useMemo(() => {
+        const links = [
+            { name: 'Gallery', path: '/gallery' },
+            //{ name: 'Journal', path: '/journal' },
+            { name: 'About', path: '/about' }
+        ];
+        if (user) {
+            links.push({ name: 'Studio', path: '/studio' });
+            if (profile?.username) {
+                links.push({ name: 'My Gallery', path: `/user/${profile.username}` });
+            }
+        }
+        return links;
+    }, [user, profile]);
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const navigate = useNavigate();
 
@@ -132,9 +145,9 @@ export default function NavBar() {
                             {t('nav.frame')}
                         </Typography>
                         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-                            {navItems.map((item) => (
-                                <NavButton key={item} disableRipple onClick={() => item === 'Gallery' ? navigate('/gallery') : undefined}>
-                                    {item}
+                            {navLinks.map((item) => (
+                                <NavButton key={item.name} disableRipple onClick={() => navigate(item.path)}>
+                                    {item.name}
                                 </NavButton>
                             ))}
                         </Box>
@@ -204,10 +217,6 @@ export default function NavBar() {
                                             {user.name || user.email}
                                         </Typography>
                                     </Box>
-                                    <Divider sx={{ borderColor: colors.borderLight }} />
-                                    <MenuItem onClick={() => navigate('/studio')}>
-                                        {t('nav.studioWorkspace')}
-                                    </MenuItem>
                                     <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                                         {t('nav.logOut')}
                                     </MenuItem>
@@ -247,16 +256,16 @@ export default function NavBar() {
                                         <CloseRoundedIcon />
                                     </IconButton>
                                 </Box>
-                                {navItems.map((item) => (
+                                {navLinks.map((item) => (
                                     <MenuItem
-                                        key={item}
+                                        key={item.name}
                                         onClick={() => {
                                             setOpen(false);
-                                            if (item === 'Gallery') navigate('/gallery');
+                                            navigate(item.path);
                                         }}
                                         sx={{ py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.05)' } }}
                                     >
-                                        <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{item}</Typography>
+                                        <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{item.name}</Typography>
                                     </MenuItem>
                                 ))}
                                 <Divider sx={{ my: 2, borderColor: colors.borderLight }} />
@@ -270,14 +279,6 @@ export default function NavBar() {
                                                 {user.name || user.email}
                                             </Typography>
                                         </Box>
-                                        <MenuItem sx={{ p: 0, mb: 1 }}>
-                                            <PrimaryButton fullWidth disableRipple onClick={() => {
-                                                setOpen(false);
-                                                navigate('/studio');
-                                            }}>
-                                                {t('nav.studioWorkspace')}
-                                            </PrimaryButton>
-                                        </MenuItem>
                                         <MenuItem sx={{ p: 0 }}>
                                             <SecondaryButton fullWidth disableRipple onClick={() => {
                                                 setOpen(false);

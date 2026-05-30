@@ -161,7 +161,13 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
  * @param userId - The ID of the currently logged-in user who owns this gallery
  * @param gallery - The Gallery object containing the array of photos to be uploaded
  */
-export async function createGallery(galleryTitle: string, userId: string, gallery: Gallery) {
+export async function createGallery(
+    galleryTitle: string,
+    userId: string,
+    gallery: Gallery,
+    isPublic: boolean = false,
+    onProgress?: (current: number, total: number) => void
+) {
 
     // Create UUID for gallery
     const guuid = ID.unique();
@@ -177,16 +183,23 @@ export async function createGallery(galleryTitle: string, userId: string, galler
             data: {
                 galleryTitle: galleryTitle,
                 users: userId,
+                isPublic: isPublic
             }
         });
 
         // Create rows for each photo with a dynamically generated UUID
+        let current = 0;
+        const total = gallery.photos.length;
         for (const photo of gallery.photos) {
             const photoId = ID.unique();
             photoIds.push(photoId);
             const imageId = await createImage(photo, photoId, guuid);
             if (imageId) {
                 uploadedFileIds.push(imageId);
+            }
+            current++;
+            if (onProgress) {
+                onProgress(current, total);
             }
         }
 
@@ -328,7 +341,7 @@ export function retrieveImageURL(fileId: string, width: number): string {
 }
 
 export function mapGalleryToCarousel(
-    fetchedGallery: Models.Document & { galleryTitle?: string; photos?: any[] },
+    fetchedGallery: Models.Document & { galleryTitle?: string; photos?: any[]; isPublic?: boolean },
     userId: string
 ): any {
     if (!fetchedGallery || !fetchedGallery.photos || fetchedGallery.photos.length === 0) return null;
@@ -349,7 +362,8 @@ export function mapGalleryToCarousel(
         id: fetchedGallery.$id,
         title: fetchedGallery.galleryTitle || "Untitled Exhibition",
         userId,
-        photos: mappedPhotos
+        photos: mappedPhotos,
+        isPublic: fetchedGallery.isPublic ?? false
     };
 }
 
@@ -521,4 +535,83 @@ export async function deleteGallery(galleryId: string) {
         console.error("[deleteGallery] Error:", error);
         throw error;
     }
+}
+
+/**
+ * Updates the public visibility status of a gallery.
+ * 
+ * @param galleryId - The ID of the gallery to update
+ * @param isPublic - The public visibility status to set
+ */
+export async function updateGalleryVisibility(galleryId: string, isPublic: boolean) {
+    try {
+        await tablesDB.updateRow({
+            databaseId,
+            tableId: 'gallery',
+            rowId: galleryId,
+            data: {
+                isPublic: isPublic
+            }
+        });
+    } catch (error) {
+        console.error("Failed to update gallery visibility:", error);
+        throw error;
+    }
+}
+
+/**
+ * Fetches user profile document and their galleries by username.
+ * 
+ * @param username - The username to query
+ * @returns A Promise that resolves to the user's document
+ */
+export async function fetchUserGalleryByUsername(username: string) {
+    try {
+        const response = await tablesDB.listRows({
+            databaseId,
+            tableId: 'users',
+            queries: [
+                Query.equal('username', username),
+                Query.select(['*', 'gallery.*', 'gallery.photos.*'])
+            ]
+        });
+        return response.rows[0];
+    } catch (error) {
+        console.error("Failed to fetch user by username:", error);
+        throw error;
+    }
+}
+
+/**
+ * Retrieves specific static asset URLs from Appwrite storage.
+ * Combines the mapping for Hero, Login, and Signup photos into a single method.
+ */
+export function getAppwriteStaticPhoto(type: 'hero' | 'login' | 'signup'): string {
+    const ids = {
+        hero: '6a1b6ef1002df5981a20',
+        login: '6a1b6ef1002de3b47d12',
+        signup: '6a1b6ef1002df68d663d'
+    };
+    return retrieveImageURL(ids[type], 1200);
+}
+
+/**
+ * Retrieves the URL for the Hero photo from Appwrite.
+ */
+export function getHeroPhoto(): string {
+    return getAppwriteStaticPhoto('hero');
+}
+
+/**
+ * Retrieves the URL for the Login page photo from Appwrite.
+ */
+export function getLoginPhoto(): string {
+    return getAppwriteStaticPhoto('login');
+}
+
+/**
+ * Retrieves the URL for the Signup page photo from Appwrite.
+ */
+export function getSignupPhoto(): string {
+    return getAppwriteStaticPhoto('signup');
 }

@@ -11,10 +11,11 @@ import { colors, typography } from '../theme';
 import type { Gallery, CarouselPhoto } from './EditableGalleryCarousel';
 
 export interface GalleryCarouselProps {
-    gallery?: Gallery & { photos: CarouselPhoto[] };
+    gallery?: Gallery & { photos: CarouselPhoto[]; isPublic?: boolean };
     authorName?: string;
     index?: number;
     onDelete?: (galleryId: string) => void;
+    onTogglePublic?: (galleryId: string, isPublic: boolean) => void;
     disableHeaderPadding?: boolean;
 }
 
@@ -56,7 +57,7 @@ const ProgressBar = styled(Box, {
     transition: 'background-color 0.3s ease',
 }));
 
-export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, disableHeaderPadding }: GalleryCarouselProps) {
+export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, onTogglePublic, disableHeaderPadding }: GalleryCarouselProps) {
     const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -168,46 +169,93 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                             {gallery.title || 'Untitled Exhibition'}
                         </Typography>
                     </Box>
-                    {onDelete && gallery.id !== 'default' && (
-                        <IconButton
-                            onClick={() => {
-                                if (confirmDelete) {
-                                    onDelete(gallery.id);
-                                    setConfirmDelete(false);
-                                } else {
-                                    setConfirmDelete(true);
-                                }
-                            }}
-                            aria-label="delete gallery"
-                            sx={{
-                                backgroundColor: confirmDelete ? '#ff4d4f' : 'transparent',
-                                border: `1px solid ${confirmDelete ? '#ff4d4f' : colors.borderLight}`,
-                                borderRadius: '0px',
-                                p: '8px 12px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                fontFamily: typography.ui,
-                                letterSpacing: '0.05em',
-                                textTransform: 'uppercase',
-                                display: 'flex',
-                                gap: 1,
-                                alignItems: 'center',
-                                color: confirmDelete ? colors.onPrimary : colors.textSecondary,
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    backgroundColor: '#ff4d4f',
-                                    borderColor: '#ff4d4f',
-                                    color: colors.onPrimary,
-                                }
-                            }}
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                            <span>{confirmDelete ? 'Confirm Delete?' : 'Delete Gallery'}</span>
-                        </IconButton>
-                    )}
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {onTogglePublic && gallery.id !== 'default' && (
+                            <IconButton
+                                onClick={() => onTogglePublic(gallery.id, !gallery.isPublic)}
+                                aria-label="toggle gallery visibility"
+                                sx={{
+                                    border: `1px solid ${gallery.isPublic ? colors.text : colors.borderLight}`,
+                                    borderRadius: '0px',
+                                    p: '8px 12px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    fontFamily: typography.ui,
+                                    letterSpacing: '0.05em',
+                                    textTransform: 'uppercase',
+                                    display: 'flex',
+                                    gap: 1.5,
+                                    alignItems: 'center',
+                                    color: gallery.isPublic ? colors.text : colors.textSecondary,
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        borderColor: colors.text,
+                                        color: colors.text,
+                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                    }
+                                }}
+                            >
+                                {gallery.isPublic ? (
+                                    <>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                        </svg>
+                                        <span>Public</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
+                                        <span>Private</span>
+                                    </>
+                                )}
+                            </IconButton>
+                        )}
+                        {onDelete && gallery.id !== 'default' && (
+                            <IconButton
+                                onClick={() => {
+                                    if (confirmDelete) {
+                                        onDelete(gallery.id);
+                                        setConfirmDelete(false);
+                                    } else {
+                                        setConfirmDelete(true);
+                                    }
+                                }}
+                                aria-label="delete gallery"
+                                sx={{
+                                    backgroundColor: confirmDelete ? '#ff4d4f' : 'transparent',
+                                    border: `1px solid ${confirmDelete ? '#ff4d4f' : colors.borderLight}`,
+                                    borderRadius: '0px',
+                                    p: '8px 12px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    fontFamily: typography.ui,
+                                    letterSpacing: '0.05em',
+                                    textTransform: 'uppercase',
+                                    display: 'flex',
+                                    gap: 1,
+                                    alignItems: 'center',
+                                    color: confirmDelete ? colors.onPrimary : colors.textSecondary,
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        backgroundColor: '#ff4d4f',
+                                        borderColor: '#ff4d4f',
+                                        color: colors.onPrimary,
+                                    }
+                                }}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                <span>{confirmDelete ? 'Confirm Delete?' : 'Delete Gallery'}</span>
+                            </IconButton>
+                        )}
+                    </Box>
                 </Box>
 
                 {/* Carousel Container Wrapper with Relative Position */}

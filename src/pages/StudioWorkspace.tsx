@@ -6,7 +6,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import GalleryCarousel from '../components/GalleryCarousel';
 import EditableGalleryCarousel, { type Gallery, type CarouselPhoto } from '../components/EditableGalleryCarousel';
-import { deleteGallery, fetchUserGallery, mapGalleryToCarousel } from '../services/photoService';
+import { deleteGallery, fetchUserGallery, mapGalleryToCarousel, updateGalleryVisibility } from '../services/photoService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -21,6 +21,7 @@ export default function StudioWorkspace() {
 
     const isMountedRef = React.useRef(true);
     React.useEffect(() => {
+        isMountedRef.current = true;
         return () => {
             isMountedRef.current = false;
         };
@@ -58,6 +59,22 @@ export default function StudioWorkspace() {
             if (isMountedRef.current) {
                 console.error("Failed to delete gallery:", error);
                 setErrorMsg("Failed to delete gallery. Please try again.");
+            }
+        }
+    }, []);
+
+    const handleTogglePublicGallery = React.useCallback(async (galleryId: string, isPublic: boolean) => {
+        try {
+            await updateGalleryVisibility(galleryId, isPublic);
+            if (isMountedRef.current) {
+                setUserGalleries(prev =>
+                    prev.map(g => (g.id === galleryId ? { ...g, isPublic } : g))
+                );
+            }
+        } catch (error: any) {
+            if (isMountedRef.current) {
+                console.error("Failed to update gallery visibility:", error);
+                setErrorMsg("Failed to update gallery visibility. Please try again.");
             }
         }
     }, []);
@@ -107,6 +124,7 @@ export default function StudioWorkspace() {
                         index={index}
                         authorName={user?.name || 'You'}
                         onDelete={handleDeleteGallery}
+                        onTogglePublic={handleTogglePublicGallery}
                         disableHeaderPadding
                     />
                 ))

@@ -14,6 +14,7 @@ const Login = lazy(() => import('./pages/Login'));
 const SignUp = lazy(() => import('./pages/SignUp'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const StudioWorkspace = lazy(() => import('./pages/StudioWorkspace'));
+const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 
 const PageLoader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, minHeight: '50vh' }}>
@@ -39,6 +40,9 @@ function App() {
             
             {/* Public Portfolio Route */}
             <Route path="/gallery" element={<Gallery />} /> 
+
+            {/* Dynamic Public Profile Route */}
+            <Route path="/user/:username" element={<PublicProfile />} /> 
 
             {/* Protected Studio/Management Route */}
             <Route element={<ProtectedRoute />}>
