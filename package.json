@@ -48,6 +48,10 @@
   "overrides": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@babel/core": "7.29.0"
+    "@babel/core": "7.29.0",
+    "@babel/runtime": "^7.26.10",
+    "debug": "^4.3.7",
+    "minimatch": "^10.2.5",
+    "yaml": "^2.5.0"
   }
 }
