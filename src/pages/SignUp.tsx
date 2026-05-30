@@ -66,7 +66,7 @@ export default function SignUp() {
                 position: 'relative'
             }}>
                 <img
-                    src="https://images.unsplash.com/photo-1733155780105-2e639e7a3983?auto=format&fit=crop&q=80&w=1200&h=1800"
+                    src="/public/assets/signup.jpg"
                     alt="Luminous Editorial Image"
                     style={{
                         position: 'absolute',
