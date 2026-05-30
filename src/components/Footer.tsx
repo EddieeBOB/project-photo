@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
+import { useTranslation } from 'react-i18next';
 
 import { colors, typography } from '../theme';
 
@@ -42,6 +43,8 @@ const SocialIcon = () => (
 );
 
 export default function Footer() {
+    const { t } = useTranslation();
+
     return (
         <Box sx={{ borderTop: `1px solid ${colors.borderLight}`, backgroundColor: '#F9F9F9', py: 3 }}>
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 1 } }}>
@@ -65,16 +68,16 @@ export default function Footer() {
                             textTransform: 'uppercase'
                         }}
                     >
-                        Frame
+                        {t('footer.frame')}
                     </Typography>
 
                     {/* Utility Links */}
                     <Box sx={{ display: 'flex', gap: { xs: 3, md: 6 }, flexWrap: 'wrap' }}>
-                        <FooterLink href="#">Journal</FooterLink>
-                        <FooterLink href="#">Exhibitions</FooterLink>
-                        <FooterLink href="#">Artists</FooterLink>
-                        <FooterLink href="#">Privacy</FooterLink>
-                        <FooterLink href="#">Terms</FooterLink>
+                        <FooterLink href="#">{t('footer.journal')}</FooterLink>
+                        <FooterLink href="#">{t('footer.exhibitions')}</FooterLink>
+                        <FooterLink href="#">{t('footer.artists')}</FooterLink>
+                        <FooterLink href="#">{t('footer.privacy')}</FooterLink>
+                        <FooterLink href="#">{t('footer.terms')}</FooterLink>
                     </Box>
 
                     {/* Socials / Language */}
@@ -89,7 +92,7 @@ export default function Footer() {
                         © {new Date().getFullYear()} Frame Collective. All rights reserved.
                     </Typography>
                     <Typography sx={{ fontFamily: typography.ui, fontSize: '11px', color: colors.textSecondary }}>
-                        Luminous Editorial Design System
+                        {t('footer.designSystem')}
                     </Typography>
                 </Box>
             </Container>
