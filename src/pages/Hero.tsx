@@ -89,7 +89,7 @@ export default function Hero() {
                                 }}
                             >
                                 <img
-                                    src={artistData?.imageUrl || "/assets/hero.png"}
+                                    src={artistData?.imageUrl || "/public/assets/hero.jpg"}
                                     alt="Luminous Gallery Interior"
                                     style={{
                                         width: '100%',

@@ -139,7 +139,7 @@ export default function Login() {
                 position: 'relative'
             }}>
                 <img
-                    src="https://images.unsplash.com/photo-1735689217474-fd6ab1c0e836?auto=format&fit=crop&q=80&w=1200&h=1800"
+                    src="/public/assets/login.jpg"
                     alt="Luminous Editorial Image"
                     style={{
                         position: 'absolute',
