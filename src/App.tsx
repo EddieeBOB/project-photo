@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import ProtectedRoute from './components/ProtectedRoute';
+import StudioWorkspace from './pages/StudioWorkspace';
 
 import { Routes, Route } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -24,7 +25,14 @@ function App() {
               <FeatureCards />
             </>
           } />
-          <Route path="/gallery" element={<Gallery />} />
+          
+          {/* Public Portfolio Route */}
+          <Route path="/gallery" element={<Gallery />} /> 
+
+          {/* Protected Studio/Management Route */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/studio" element={<StudioWorkspace />} /> 
+          </Route>
         </Routes>
       </Box>
       <Footer />

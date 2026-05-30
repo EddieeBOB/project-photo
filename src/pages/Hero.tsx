@@ -9,20 +9,18 @@ import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 
 export default function Hero() {
-    const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null }>({
-        name: "John Doe",
-        title: '"Bob the Burger."',
-        imageUrl: null
-    });
+    const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null } | null>(null);
 
     useEffect(() => {
+        let isMounted = true;
         async function loadFeaturedArtist() {
             const data = await fetchFeaturedArtist();
-            if (data) {
+            if (isMounted && data) {
                 setArtistData(data);
             }
         }
         loadFeaturedArtist();
+        return () => { isMounted = false; };
     }, []);
 
     return (
@@ -89,7 +87,7 @@ export default function Hero() {
                                 }}
                             >
                                 <img
-                                    src={artistData.imageUrl || "/assets/hero.png"}
+                                    src={artistData?.imageUrl || "/assets/hero.png"}
                                     alt="Luminous Gallery Interior"
                                     style={{
                                         width: '100%',
@@ -100,55 +98,57 @@ export default function Hero() {
                             </Box>
 
                             {/* Featured Artist Card */}
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    bottom: { xs: -24, md: -32 },
-                                    left: { xs: 16, md: -64 },
-                                    backgroundColor: colors.onPrimary,
-                                    padding: '24px 32px',
-                                    boxShadow: '0 12px 32px rgba(0,0,0,0.06)',
-                                    zIndex: 10,
-                                    border: `1px solid ${colors.borderLight}`,
-                                    maxWidth: '280px',
-                                    width: '100%'
-                                }}
-                            >
-                                <Typography
+                            {artistData && (
+                                <Box
                                     sx={{
-                                        fontFamily: typography.ui,
-                                        fontSize: '11px',
-                                        fontWeight: 600,
-                                        letterSpacing: '0.1em',
-                                        textTransform: 'uppercase',
-                                        color: colors.textSecondary,
-                                        mb: 1.5
+                                        position: 'absolute',
+                                        bottom: { xs: -24, md: -32 },
+                                        left: { xs: 16, md: -64 },
+                                        backgroundColor: colors.onPrimary,
+                                        padding: '24px 32px',
+                                        boxShadow: '0 12px 32px rgba(0,0,0,0.06)',
+                                        zIndex: 10,
+                                        border: `1px solid ${colors.borderLight}`,
+                                        maxWidth: '280px',
+                                        width: '100%'
                                     }}
                                 >
-                                    Featured Artist
-                                </Typography>
-                                <Typography
-                                    sx={{
-                                        fontFamily: typography.headline,
-                                        fontSize: '24px',
-                                        color: colors.text,
-                                        mb: 1
-                                    }}
-                                >
-                                    {artistData.name}
-                                </Typography>
-                                <Typography
-                                    sx={{
-                                        fontFamily: typography.ui,
-                                        fontSize: '14px',
-                                        color: colors.textSecondary,
-                                        fontStyle: 'italic',
-                                        lineHeight: 1.5
-                                    }}
-                                >
-                                    {artistData.title}
-                                </Typography>
-                            </Box>
+                                    <Typography
+                                        sx={{
+                                            fontFamily: typography.ui,
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                            letterSpacing: '0.1em',
+                                            textTransform: 'uppercase',
+                                            color: colors.textSecondary,
+                                            mb: 1.5
+                                        }}
+                                    >
+                                        Featured Artist
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            fontFamily: typography.headline,
+                                            fontSize: '24px',
+                                            color: colors.text,
+                                            mb: 1
+                                        }}
+                                    >
+                                        {artistData.name}
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            fontFamily: typography.ui,
+                                            fontSize: '14px',
+                                            color: colors.textSecondary,
+                                            fontStyle: 'italic',
+                                            lineHeight: 1.5
+                                        }}
+                                    >
+                                        {artistData.title}
+                                    </Typography>
+                                </Box>
+                            )}
                         </Box>
                     </Box>
                 </Box>

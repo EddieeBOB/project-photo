@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
+import TextField, { type TextFieldProps } from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
 import { handleSignUp as handleSignUpService } from '../services/signupService';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,6 +41,7 @@ export default function SignUp() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const { checkAuth } = useAuth();
 
     const handleSignUp = async (e: React.FormEvent) => {
@@ -46,9 +49,9 @@ export default function SignUp() {
         try {
             await handleSignUpService(name, email, password);
             await checkAuth(); // Refresh global user state
-            navigate('/gallery'); // Redirect to gallery
-        } catch (error) {
-            // Error is handled in the service
+            navigate('/studio'); // Redirect to studio workspace
+        } catch (error: any) {
+            setErrorMsg(error.message || "Sign up failed. Please try again.");
         }
     };
 
@@ -61,7 +64,7 @@ export default function SignUp() {
                 position: 'relative'
             }}>
                 <img
-                    src="https://tor.cloud.appwrite.io/v1/storage/buckets/6a0952c2001568b2f373/files/1/view?project=6a09504300328dac3255&mode=admin"
+                    src="https://images.unsplash.com/photo-1733155780105-2e639e7a3983?auto=format&fit=crop&q=80&w=1200&h=1800"
                     alt="Luminous Editorial Image"
                     style={{
                         position: 'absolute',
@@ -132,6 +135,9 @@ export default function SignUp() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
+                                slotProps={{ htmlInput: { minLength: 8 } }}
+                                helperText={password.length > 0 && password.length < 8 ? "Password must be at least 8 characters" : ""}
+                                error={password.length > 0 && password.length < 8}
                             />
                             <PrimaryButton type="submit" fullWidth disableRipple sx={{ mt: 2 }}>
                                 Sign Up
@@ -147,8 +153,18 @@ export default function SignUp() {
                             </Link>
                         </Typography>
                     </Box>
+                    <Box sx={{ mt: 4, textAlign: 'center' }}>
+                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            © {new Date().getFullYear()} Frame Collective.
+                        </Typography>
+                    </Box>
                 </Box>
             </Box>
+            <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
+                <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
+                    {errorMsg}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

@@ -1,57 +1,61 @@
 import * as React from 'react';
+import type { Models } from 'appwrite';
 import GalleryCarousel from '../components/GalleryCarousel';
-import EditableGalleryCarousel, { type Gallery, type CarouselPhoto } from '../components/EditableGalleryCarousel';
-import { fetchUserGallery, retrieveImageURL } from '../services/photoService';
+import type { Gallery, CarouselPhoto } from '../components/EditableGalleryCarousel';
+import { fetchUserGallery, mapGalleryToCarousel } from '../services/photoService';
 import { useAuth } from '../contexts/AuthContext';
+import Box from '@mui/material/Box';
 
 export default function GalleryPage() {
     const { user, loading } = useAuth();
-    const [userGallery, setUserGallery] = React.useState<(Gallery & { photos: CarouselPhoto[] }) | null>(null);
+    const [userGalleries, setUserGalleries] = React.useState<(Gallery & { photos: CarouselPhoto[] })[]>([]);
 
     React.useEffect(() => {
         if (!user) {
-            setUserGallery(null);
+            setUserGalleries([]);
             return;
         }
+
+        let isMounted = true;
 
         const loadGallery = async () => {
             try {
                 const fetchedUser = await fetchUserGallery(user.$id);
-                const fetchedGallery = fetchedUser?.gallery?.[0]; // fetchUserGallery returns the User object, so we need its first gallery
-                if (fetchedGallery && fetchedGallery.photos && fetchedGallery.photos.length > 0) {
-                    const mappedPhotos = fetchedGallery.photos.map((photo: any) => ({
-                        id: photo.$id,
-                        src: retrieveImageURL(photo.imageId, 1200),
-                        title: photo.title || 'Untitled',
-                        description: photo.description,
-                        metadata: {
-                            exposure: photo.exposure || 'N/A',
-                            iso: photo.iso || 'N/A',
-                            lens: photo.lens || 'N/A'
-                        }
-                    }));
+                if (!isMounted) return;
 
-                    setUserGallery({
-                        id: fetchedGallery.$id,
-                        title: fetchedGallery.galleryTitle || "Untitled Exhibition",
-                        userId: user.$id,
-                        photos: mappedPhotos as any
-                    });
-                }
+                const galleries = fetchedUser?.gallery || [];
+                const mappedGalleries = galleries.map((fetchedGallery: any) => 
+                    mapGalleryToCarousel(fetchedGallery, user.$id)
+                ).filter(Boolean);
+
+                setUserGalleries(mappedGalleries as unknown as (Gallery & { photos: CarouselPhoto[] })[]);
             } catch (error) {
-                console.error("Failed to load user gallery:", error);
+                if (isMounted) {
+                    console.error("Failed to load user gallery:", error);
+                }
             }
         };
+
         loadGallery();
+
+        return () => {
+            isMounted = false;
+        };
     }, [user]);
 
     if (loading) return null;
 
     return (
-        <>
+        <Box sx={{ pt: user && userGalleries.length === 0 ? { xs: 8, md: 10 } : 0 }}>
             {!user && <GalleryCarousel />}
-            {user && userGallery && <GalleryCarousel gallery={userGallery} authorName={user.name || 'You'} />}
-            <EditableGalleryCarousel />
-        </>
+            {user && userGalleries.map((gallery, index) => (
+                <GalleryCarousel
+                    key={gallery.id}
+                    gallery={gallery}
+                    index={index}
+                    authorName={user.name || 'You'}
+                />
+            ))}
+        </Box>
     );
 }

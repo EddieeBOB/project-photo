@@ -13,10 +13,11 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Typography from '@mui/material/Typography';
 import Menu from '@mui/material/Menu';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 import { account } from '../lib/appwrite';
+import { useAuth } from '../contexts/AuthContext';
 
 const UserIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -73,20 +74,9 @@ const navItems = ['Gallery', 'Journal', 'About'];
 
 export default function NavBar() {
     const [open, setOpen] = React.useState(false);
-    const [user, setUser] = React.useState<any>(null);
+    const { user, checkAuth } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const navigate = useNavigate();
-    const location = useLocation();
-
-    React.useEffect(() => {
-        account.get()
-            .then((res) => {
-                setUser(res);
-            })
-            .catch(() => {
-                setUser(null);
-            });
-    }, [location.pathname]);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -99,7 +89,7 @@ export default function NavBar() {
     const handleLogout = async () => {
         try {
             await account.deleteSession('current');
-            setUser(null);
+            await checkAuth(); // Refresh global auth context state (sets user to null)
             navigate('/');
         } catch (error) {
             console.error("Logout failed:", error);
@@ -125,6 +115,10 @@ export default function NavBar() {
                         <Typography
                             variant="h6"
                             onClick={() => navigate('/')}
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Navigate to Home"
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
                             sx={{
                                 fontFamily: typography.headline,
                                 color: colors.text,
@@ -209,7 +203,7 @@ export default function NavBar() {
                                         </Typography>
                                     </Box>
                                     <Divider sx={{ borderColor: colors.borderLight }} />
-                                    <MenuItem onClick={() => navigate('/gallery')}>
+                                    <MenuItem onClick={() => navigate('/studio')}>
                                         Studio Workspace
                                     </MenuItem>
                                     <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
@@ -277,7 +271,7 @@ export default function NavBar() {
                                         <MenuItem sx={{ p: 0, mb: 1 }}>
                                             <PrimaryButton fullWidth disableRipple onClick={() => {
                                                 setOpen(false);
-                                                navigate('/gallery');
+                                                navigate('/studio');
                                             }}>
                                                 Studio Workspace
                                             </PrimaryButton>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
+import TextField, { type TextFieldProps } from '@mui/material/TextField';
 import { Link, useNavigate } from 'react-router-dom';
 import { handleLogin as handleLoginService } from '../services/loginService';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,6 +38,7 @@ export default function Login() {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const { checkAuth } = useAuth();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -45,9 +46,9 @@ export default function Login() {
         try {
             await handleLoginService(email, password);
             await checkAuth(); // Refresh global user state
-            navigate('/gallery'); // Redirect to gallery
-        } catch (error) {
-            // Error is handled in the service
+            navigate('/studio'); // Redirect to studio workspace
+        } catch (error: any) {
+            setErrorMsg(error.message || "Login failed. Please try again.");
         }
     };
 
@@ -118,6 +119,12 @@ export default function Login() {
                             </Link>
                         </Typography>
                     </Box>
+
+                    <Box sx={{ mt: 4, textAlign: 'center' }}>
+                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            © {new Date().getFullYear()} Frame Collective.
+                        </Typography>
+                    </Box>
                 </Box>
             </Box>
 
@@ -128,7 +135,7 @@ export default function Login() {
                 position: 'relative'
             }}>
                 <img
-                    src="https://tor.cloud.appwrite.io/v1/storage/buckets/6a0952c2001568b2f373/files/1/view?project=6a09504300328dac3255&mode=admin"
+                    src="https://images.unsplash.com/photo-1735689217474-fd6ab1c0e836?auto=format&fit=crop&q=80&w=1200&h=1800"
                     alt="Luminous Editorial Image"
                     style={{
                         position: 'absolute',
