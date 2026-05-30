@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField, { type TextFieldProps } from '@mui/material/TextField';
+import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { handleLogin as handleLoginService } from '../services/loginService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -35,6 +38,7 @@ const StyledTextField = styled(TextField)({
 });
 
 export default function Login() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -74,7 +78,7 @@ export default function Login() {
                             mb: 2
                         }}
                     >
-                        Welcome Back.
+                        {t('login.welcomeBack')}
                     </Typography>
                     <Typography
                         variant="body1"
@@ -84,7 +88,7 @@ export default function Login() {
                             mb: 6
                         }}
                     >
-                        Enter your details to access your gallery.
+                        {t('login.enterDetails')}
                     </Typography>
 
                     <form onSubmit={handleLogin}>
@@ -106,16 +110,16 @@ export default function Login() {
                                 required
                             />
                             <PrimaryButton type="submit" fullWidth disableRipple sx={{ mt: 2 }}>
-                                Log In
+                                {t('login.logIn')}
                             </PrimaryButton>
                         </Box>
                     </form>
 
                     <Box sx={{ mt: 4, textAlign: 'center' }}>
                         <Typography variant="body2" sx={{ fontFamily: typography.ui, color: colors.textSecondary }}>
-                            Don't have an account?{' '}
+                            {t('login.noAccount')}{' '}
                             <Link to="/signup" style={{ color: colors.primary, textDecoration: 'none', fontWeight: 500 }}>
-                                Sign Up
+                                {t('login.signUp')}
                             </Link>
                         </Typography>
                     </Box>
@@ -147,6 +151,11 @@ export default function Login() {
                     }}
                 />
             </Box>
+            <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
+                <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
+                    {errorMsg}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

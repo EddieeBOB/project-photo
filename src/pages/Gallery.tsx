@@ -1,5 +1,4 @@
 import * as React from 'react';
-import type { Models } from 'appwrite';
 import GalleryCarousel from '../components/GalleryCarousel';
 import type { Gallery, CarouselPhoto } from '../components/EditableGalleryCarousel';
 import { fetchUserGallery, mapGalleryToCarousel } from '../services/photoService';

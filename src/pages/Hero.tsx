@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
+import { useTranslation } from 'react-i18next';
 import { fetchFeaturedArtist } from '../services/photoService';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -9,6 +10,7 @@ import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 
 export default function Hero() {
+    const { t } = useTranslation();
     const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null } | null>(null);
 
     useEffect(() => {
@@ -62,11 +64,11 @@ export default function Hero() {
                                 maxWidth: 'auto'
                             }}
                         >
-                            A platform where photography can exist without the noise. < br /> Share your story, one frame at a time.
+                            {t('hero.description')}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                            <PrimaryButton disableRipple>Explore Gallery</PrimaryButton>
-                            <SecondaryButton disableRipple>Read the Journal</SecondaryButton>
+                            <PrimaryButton disableRipple>{t('hero.exploreGallery')}</PrimaryButton>
+                            <SecondaryButton disableRipple>{t('hero.readJournal')}</SecondaryButton>
                         </Box>
                     </Box>
 
@@ -124,7 +126,7 @@ export default function Hero() {
                                             mb: 1.5
                                         }}
                                     >
-                                        Featured Artist
+                                        {t('hero.featuredArtist')}
                                     </Typography>
                                     <Typography
                                         sx={{

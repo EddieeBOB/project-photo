@@ -8,10 +8,12 @@ import GalleryCarousel from '../components/GalleryCarousel';
 import EditableGalleryCarousel, { type Gallery, type CarouselPhoto } from '../components/EditableGalleryCarousel';
 import { deleteGallery, fetchUserGallery, mapGalleryToCarousel } from '../services/photoService';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+
 import { colors, typography } from '../theme';
-import type { Models } from 'appwrite';
 
 export default function StudioWorkspace() {
+    const { t } = useTranslation();
     const { user, loading } = useAuth();
     const [userGalleries, setUserGalleries] = React.useState<(Gallery & { photos: CarouselPhoto[] })[]>([]);
     const [fetching, setFetching] = React.useState(false);
@@ -82,7 +84,7 @@ export default function StudioWorkspace() {
                         mb: 1
                     }}
                 >
-                    Studio Workspace
+                    {t('studioWorkspace.title')}
                 </Typography>
                 <Typography
                     variant="body1"
@@ -92,7 +94,7 @@ export default function StudioWorkspace() {
                         mb: 4
                     }}
                 >
-                    Manage your active exhibitions and curate new photographic collections.
+                    {t('studioWorkspace.description')}
                 </Typography>
             </Container>
 
@@ -112,7 +114,7 @@ export default function StudioWorkspace() {
                 !fetching && (
                     <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, py: 6, mb: 4, border: `1px dashed ${colors.borderLight}` }}>
                         <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, textAlign: 'center' }}>
-                            You don't have any published exhibitions yet. Curate your first collection below.
+                            {t('studioWorkspace.noExhibitions')}
                         </Typography>
                     </Container>
                 )

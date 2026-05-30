@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { Translation } from 'react-i18next';
 import { colors, typography, PrimaryButton } from '../theme';
 
 interface ErrorBoundaryState {
@@ -28,35 +29,39 @@ export default class ErrorBoundary extends React.Component<
     render() {
         if (this.state.hasError) {
             return (
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '50vh',
-                    p: 4
-                }}>
-                    <Typography sx={{
-                        fontFamily: typography.headline,
-                        fontSize: '32px',
-                        color: colors.text,
-                        mb: 2
-                    }}>
-                        Something went wrong.
-                    </Typography>
-                    <Typography sx={{
-                        fontFamily: typography.ui,
-                        color: colors.textSecondary,
-                        mb: 4,
-                        textAlign: 'center',
-                        maxWidth: '400px'
-                    }}>
-                        We're sorry — an unexpected error occurred. Please reload the page to continue.
-                    </Typography>
-                    <PrimaryButton onClick={() => window.location.reload()}>
-                        Reload Page
-                    </PrimaryButton>
-                </Box>
+                <Translation>
+                    {(t) => (
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '50vh',
+                            p: 4
+                        }}>
+                            <Typography sx={{
+                                fontFamily: typography.headline,
+                                fontSize: '32px',
+                                color: colors.text,
+                                mb: 2
+                            }}>
+                                {t('errorBoundary.somethingWentWrong')}
+                            </Typography>
+                            <Typography sx={{
+                                fontFamily: typography.ui,
+                                color: colors.textSecondary,
+                                mb: 4,
+                                textAlign: 'center',
+                                maxWidth: '400px'
+                            }}>
+                                {t('errorBoundary.unexpectedError')}
+                            </Typography>
+                            <PrimaryButton onClick={() => window.location.reload()}>
+                                {t('errorBoundary.reloadPage')}
+                            </PrimaryButton>
+                        </Box>
+                    )}
+                </Translation>
             );
         }
         return this.props.children;
