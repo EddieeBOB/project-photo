@@ -15,6 +15,7 @@ const SignUp = lazy(() => import('./pages/SignUp'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const StudioWorkspace = lazy(() => import('./pages/StudioWorkspace'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+const About = lazy(() => import('./pages/About'));
 
 const PageLoader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, minHeight: '50vh' }}>
@@ -31,6 +32,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/about" element={<About />} />
             <Route path="/" element={
               <>
                 <Hero />

@@ -125,7 +125,7 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
                     reject(new Error("Image loaded with 0 width"));
                     return;
                 }
-                
+
                 // Only downscale if the image exceeds target width
                 const targetWidth = img.width > width ? width : img.width;
                 const scale = targetWidth / img.width;
@@ -215,24 +215,24 @@ export async function createGallery(
 
     } catch (error) {
         console.error("Error creating gallery, initiating rollback cleanup...", error);
-        
+
         // Rollback: Delete any created photo documents
         for (const pid of photoIds) {
             try {
                 await tablesDB.deleteRow({ databaseId, tableId: 'photos', rowId: pid });
-            } catch {}
+            } catch { }
         }
         // Rollback: Delete any uploaded files from storage
         for (const fid of uploadedFileIds) {
             try {
                 await storage.deleteFile({ bucketId, fileId: fid });
-            } catch {}
+            } catch { }
         }
         // Rollback: Delete the gallery row
         try {
             await tablesDB.deleteRow({ databaseId, tableId: 'gallery', rowId: guuid });
-        } catch {}
-        
+        } catch { }
+
         throw error;
     }
 
@@ -270,7 +270,7 @@ export async function createImage(item: Photo, uuid: string, galleryId: string) 
                 gallery: galleryId
             }
         });
-        
+
         return imageId;
     } catch (error) {
         // Clean up the uploaded storage file if the DB document write fails
@@ -486,7 +486,7 @@ export async function deleteGallery(galleryId: string) {
         // 1. Fetch all photos associated with this gallery
         const allPhotos: any[] = [];
         let offset = 0;
-        
+
         while (true) {
             const response = await tablesDB.listRows({
                 databaseId,
@@ -497,9 +497,9 @@ export async function deleteGallery(galleryId: string) {
                     Query.offset(offset)
                 ]
             });
-            
+
             allPhotos.push(...response.rows);
-            
+
             if (response.rows.length < 100) break;
             offset += 100;
         }

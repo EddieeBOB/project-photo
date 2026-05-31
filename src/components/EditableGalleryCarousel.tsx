@@ -384,7 +384,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
             sx={{
                 pt: { xs: 8, md: 5 },
                 pb: { xs: 12, md: 16 },
-                backgroundColor: '#F9F9F9',
+                backgroundColor: colors.surface,
                 position: 'relative'
             }}
         >

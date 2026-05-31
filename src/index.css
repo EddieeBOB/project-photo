@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
+  --primary: #000000;
+  --on-primary: #ffffff;
   --text: #1A1C1E;
   --text-secondary: #44474E;
   --bg: #F9F9F9;
+  --surface: #F9F9F9;
+  --surface-transparent: rgba(249, 249, 249, 0.8);
   --surface-bright: #FFFFFF;
   --surface-low: #F3F3F3;
   --border: rgba(0, 0, 0, 0.1);
-  --accent: #000000;
 
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --heading: 'Playfair Display', Georgia, serif;
@@ -22,6 +25,24 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-theme="dark"] {
+  --primary: #ffffff;
+  --on-primary: #2f3131;
+  --text: #e5e2e1;
+  --text-secondary: #c4c7c8;
+  --bg: #131313;
+  --surface: #131313;
+  --surface-transparent: rgba(19, 19, 19, 0.8);
+  --surface-bright: #3a3939;
+  --surface-low: #1c1b1b;
+  --border: rgba(255, 255, 255, 0.15);
+  color-scheme: dark;
+}
+
+body, main, header, footer, .MuiBox-root, .MuiContainer-root, .MuiPaper-root, .MuiButton-root {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
 #root {
   display: flex;
   flex-direction: column;
@@ -32,6 +53,8 @@
 body {
   margin: 0;
   padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
 h1,
@@ -46,4 +69,24 @@ h4 {
 
 p {
   margin: 0;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-color: var(--surface-low);
+  }
+  50% {
+    background-color: var(--border);
+  }
+  100% {
+    background-color: var(--surface-low);
+  }
+}
+
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  display: inline-block;
+  height: 1em;
+  width: 100%;
+  border-radius: 2px;
 }

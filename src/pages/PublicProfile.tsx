@@ -3,8 +3,7 @@ import { useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import CircularProgress from '@mui/material/CircularProgress';
-import GalleryCarousel from '../components/GalleryCarousel';
+import GalleryCarousel, { GalleryCarouselSkeleton } from '../components/GalleryCarousel';
 import type { Gallery, CarouselPhoto } from '../components/EditableGalleryCarousel';
 import { fetchUserGalleryByUsername, mapGalleryToCarousel } from '../services/photoService';
 import { colors, typography } from '../theme';
@@ -65,15 +64,19 @@ export default function PublicProfile() {
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', backgroundColor: '#FFFFFF' }}>
-                <CircularProgress sx={{ color: colors.text }} />
+            <Box sx={{ pt: { xs: 8, md: 16 }, pb: 8, backgroundColor: colors.surfaceBright }}>
+                <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, mb: 4 }}>
+                    <Box className="skeleton" sx={{ width: { xs: '200px', md: '300px' }, height: { xs: '36px', md: '56px' }, mb: 2 }} />
+                    <Box className="skeleton" sx={{ width: '120px', height: '14px' }} />
+                </Container>
+                <GalleryCarouselSkeleton disableHeaderPadding />
             </Box>
         );
     }
 
     if (error || !artistName) {
         return (
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', px: 3, backgroundColor: '#FFFFFF' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', px: 3, backgroundColor: colors.surfaceBright }}>
                 <Typography variant="h1" sx={{ fontFamily: typography.headline, fontSize: '48px', color: colors.text, mb: 2 }}>
                     Profile Not Found
                 </Typography>
@@ -85,7 +88,7 @@ export default function PublicProfile() {
     }
 
     return (
-        <Box sx={{ pt: { xs: 8, md: 16 }, pb: 8, backgroundColor: '#FFFFFF' }}>
+        <Box sx={{ pt: { xs: 8, md: 16 }, pb: 8, backgroundColor: colors.surfaceBright }}>
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, mb: 4 }}>
                 <Typography
                     variant="h1"

@@ -16,6 +16,7 @@ export interface GalleryCarouselProps {
     index?: number;
     onDelete?: (galleryId: string) => void;
     onTogglePublic?: (galleryId: string, isPublic: boolean) => void;
+    onDeletePhoto?: (galleryId: string, photoId: string) => void;
     disableHeaderPadding?: boolean;
 }
 
@@ -57,7 +58,7 @@ const ProgressBar = styled(Box, {
     transition: 'background-color 0.3s ease',
 }));
 
-export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, onTogglePublic, disableHeaderPadding }: GalleryCarouselProps) {
+export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, onTogglePublic, onDeletePhoto, disableHeaderPadding }: GalleryCarouselProps) {
     const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -136,7 +137,7 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                 ? { xs: 2, md: 2 } 
                 : (index !== undefined && index > 0 ? { xs: 4, md: 6 } : { xs: 12, md: 12 }), 
             pb: { xs: 2, md: 0 }, 
-            backgroundColor: '#F9F9F9' 
+            backgroundColor: colors.surface 
         }}>
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
 
@@ -367,13 +368,40 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                 }}
                             >
                                 {/* Image */}
-                                <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3 }}>
+                                <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3, position: 'relative' }}>
                                     <img
                                         src={item.src}
                                         alt={item.title}
                                         crossOrigin="anonymous"
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     />
+                                    {onDeletePhoto && (
+                                        <IconButton
+                                            onClick={() => onDeletePhoto(gallery.id, item.id)}
+                                            aria-label="delete photo"
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 12,
+                                                right: 12,
+                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                border: `1px solid ${colors.borderLight}`,
+                                                borderRadius: '0px',
+                                                color: colors.textSecondary,
+                                                '&:hover': {
+                                                    backgroundColor: '#ff4d4f',
+                                                    borderColor: '#ff4d4f',
+                                                    color: '#fff',
+                                                },
+                                                transition: 'all 0.2s ease',
+                                                p: 1
+                                            }}
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </IconButton>
+                                    )}
                                 </Box>
 
                                 {/* Footer of Card */}
@@ -428,6 +456,70 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                     ))}
                 </Box>
 
+            </Container>
+        </Box>
+    );
+}
+
+export function GalleryCarouselSkeleton({ disableHeaderPadding }: { disableHeaderPadding?: boolean }) {
+    return (
+        <Box sx={{ 
+            pt: disableHeaderPadding 
+                ? { xs: 2, md: 2 } 
+                : { xs: 12, md: 12 }, 
+            pb: { xs: 2, md: 0 }, 
+            backgroundColor: colors.surface 
+        }}>
+            <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
+                {/* Header Skeleton */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, mt: disableHeaderPadding ? 0 : 5 }}>
+                    <Box sx={{ width: '100%', maxWidth: '400px' }}>
+                        <Box className="skeleton" sx={{ width: '80px', height: '11px', mb: 1.5 }} />
+                        <Box className="skeleton" sx={{ width: '100%', height: { xs: '36px', md: '48px' } }} />
+                    </Box>
+                </Box>
+
+                {/* Carousel Container Skeleton */}
+                <Box sx={{ display: 'flex', gap: 4, overflow: 'hidden', pb: 2 }}>
+                    <Box
+                        sx={{
+                            minWidth: { xs: '100%', md: '85%' },
+                            border: `1px solid ${colors.borderLight}`,
+                            backgroundColor: colors.onPrimary,
+                            p: { xs: 2, md: 3 },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            opacity: 0.8
+                        }}
+                    >
+                        {/* Image Placeholder */}
+                        <Box className="skeleton" sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, mb: 3 }} />
+
+                        {/* Card Footer Placeholder */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 3 }}>
+                            <Box sx={{ flex: 1, maxWidth: '200px' }}>
+                                <Box className="skeleton" sx={{ width: '80%', height: '24px', mb: 1 }} />
+                                <Box className="skeleton" sx={{ width: '50%', height: '14px' }} />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
+                                {[1, 2, 3].map((i) => (
+                                    <Box key={i} sx={{ width: '60px' }}>
+                                        <Box className="skeleton" sx={{ width: '100%', height: '10px', mb: 1 }} />
+                                        <Box className="skeleton" sx={{ width: '80%', height: '14px' }} />
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Box>
+                    </Box>
+                </Box>
+
+                {/* Dots Placeholder */}
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 4 }}>
+                    {[1, 2, 3].map((i) => (
+                        <Box key={i} className="skeleton" sx={{ height: '1px', width: '40px' }} />
+                    ))}
+                </Box>
             </Container>
         </Box>
     );

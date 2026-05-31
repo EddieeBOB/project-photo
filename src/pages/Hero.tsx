@@ -12,13 +12,23 @@ const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 export default function Hero() {
     const { t } = useTranslation();
     const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null } | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
+        setLoading(true);
         async function loadFeaturedArtist() {
-            const data = await fetchFeaturedArtist();
-            if (isMounted && data) {
-                setArtistData(data);
+            try {
+                const data = await fetchFeaturedArtist();
+                if (isMounted) {
+                    setArtistData(data);
+                }
+            } catch (error) {
+                console.error("Failed to load featured artist:", error);
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         }
         loadFeaturedArtist();
@@ -100,19 +110,18 @@ export default function Hero() {
                             </Box>
 
                             {/* Featured Artist Card */}
-                            {artistData && (
+                            {(loading || artistData) && (
                                 <Box
                                     sx={{
                                         position: 'absolute',
                                         bottom: { xs: -24, md: -32 },
                                         left: { xs: 16, md: -64 },
                                         backgroundColor: colors.onPrimary,
-                                        padding: '24px 32px',
+                                        padding: '24px 24px',
                                         boxShadow: '0 12px 32px rgba(0,0,0,0.06)',
                                         zIndex: 10,
                                         border: `1px solid ${colors.borderLight}`,
-                                        maxWidth: '280px',
-                                        width: '100%'
+                                        width: 'auto'
                                     }}
                                 >
                                     <Typography
@@ -128,27 +137,36 @@ export default function Hero() {
                                     >
                                         {t('hero.featuredArtist')}
                                     </Typography>
-                                    <Typography
-                                        sx={{
-                                            fontFamily: typography.headline,
-                                            fontSize: '24px',
-                                            color: colors.text,
-                                            mb: 1
-                                        }}
-                                    >
-                                        {artistData.name}
-                                    </Typography>
-                                    <Typography
-                                        sx={{
-                                            fontFamily: typography.ui,
-                                            fontSize: '14px',
-                                            color: colors.textSecondary,
-                                            fontStyle: 'italic',
-                                            lineHeight: 1.5
-                                        }}
-                                    >
-                                        {artistData.title}
-                                    </Typography>
+                                    {loading ? (
+                                        <>
+                                            <Box className="skeleton" sx={{ width: '140px', height: '24px', mb: 1.5 }} />
+                                            <Box className="skeleton" sx={{ width: '100px', height: '14px' }} />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Typography
+                                                sx={{
+                                                    fontFamily: typography.headline,
+                                                    fontSize: '24px',
+                                                    color: colors.text,
+                                                    mb: 1
+                                                }}
+                                            >
+                                                {artistData?.name}
+                                            </Typography>
+                                            <Typography
+                                                sx={{
+                                                    fontFamily: typography.ui,
+                                                    fontSize: '14px',
+                                                    color: colors.textSecondary,
+                                                    fontStyle: 'italic',
+                                                    lineHeight: 1.5
+                                                }}
+                                            >
+                                                {artistData?.title}
+                                            </Typography>
+                                        </>
+                                    )}
                                 </Box>
                             )}
                         </Box>

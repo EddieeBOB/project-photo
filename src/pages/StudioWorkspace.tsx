@@ -4,9 +4,9 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import GalleryCarousel from '../components/GalleryCarousel';
+import GalleryCarousel, { GalleryCarouselSkeleton } from '../components/GalleryCarousel';
 import EditableGalleryCarousel, { type Gallery, type CarouselPhoto } from '../components/EditableGalleryCarousel';
-import { deleteGallery, fetchUserGallery, mapGalleryToCarousel, updateGalleryVisibility } from '../services/photoService';
+import { deleteGallery, deletePhoto, fetchUserGallery, mapGalleryToCarousel, updateGalleryVisibility } from '../services/photoService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -79,6 +79,30 @@ export default function StudioWorkspace() {
         }
     }, []);
 
+    const handleDeletePhoto = React.useCallback(async (galleryId: string, photoId: string) => {
+        try {
+            await deletePhoto(photoId);
+            if (isMountedRef.current) {
+                setUserGalleries(prev =>
+                    prev.map(g => {
+                        if (g.id === galleryId) {
+                            return {
+                                ...g,
+                                photos: g.photos.filter(p => p.id !== photoId)
+                            };
+                        }
+                        return g;
+                    })
+                );
+            }
+        } catch (error: any) {
+            if (isMountedRef.current) {
+                console.error("Failed to delete photo:", error);
+                setErrorMsg("Failed to delete photo. Please try again.");
+            }
+        }
+    }, []);
+
     React.useEffect(() => {
         if (user) {
             loadGallery();
@@ -116,7 +140,9 @@ export default function StudioWorkspace() {
             </Container>
 
             {/* Existing Galleries List */}
-            {userGalleries.length > 0 ? (
+            {fetching ? (
+                <GalleryCarouselSkeleton disableHeaderPadding />
+            ) : userGalleries.length > 0 ? (
                 userGalleries.map((gallery, index) => (
                     <GalleryCarousel
                         key={gallery.id}
@@ -125,17 +151,16 @@ export default function StudioWorkspace() {
                         authorName={user?.name || 'You'}
                         onDelete={handleDeleteGallery}
                         onTogglePublic={handleTogglePublicGallery}
+                        onDeletePhoto={handleDeletePhoto}
                         disableHeaderPadding
                     />
                 ))
             ) : (
-                !fetching && (
-                    <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, py: 6, mb: 4, border: `1px dashed ${colors.borderLight}` }}>
-                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, textAlign: 'center' }}>
-                            {t('studioWorkspace.noExhibitions')}
-                        </Typography>
-                    </Container>
-                )
+                <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, py: 6, mb: 4, border: `1px dashed ${colors.borderLight}` }}>
+                    <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, textAlign: 'center' }}>
+                        {t('studioWorkspace.noExhibitions')}
+                    </Typography>
+                </Container>
             )}
 
             {/* Editable Carousel for Uploading / Curating */}
