@@ -4,6 +4,12 @@ Frame is a sophisticated, photography-focused web platform designed to prioritiz
 
 ---
 
+### THIS IS AN DEMO APP! NOT FOR PRODUCTION USE
+#### Use it at your own risk! 
+#### I am not responsible for any data loss or security breaches.
+
+---
+
 ## Website Preview
 
 ### Home Page
@@ -61,9 +67,9 @@ The following features and improvements are planned for upcoming releases:
   - Optimizing asset delivery via modern formats (WebP/AVIF conversions on the fly) and lazy-loading offscreen image containers.
 
 - [x] Fix Favicon
-- [ ] Fix Login Submit Form
+- [x] Fix Login Submit Form
 - [x] Remove (FirstName, LastName), only use Username
-- [ ] Add Dark Mode
+- [x] Add Dark Mode
 
 ---
 
