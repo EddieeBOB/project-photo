@@ -34,9 +34,7 @@ export default function PublicProfile() {
                     return;
                 }
 
-                const firstName = fetchedUser.firstName || '';
-                const lastName = fetchedUser.lastName || '';
-                const fullName = [firstName, lastName].filter(Boolean).join(' ') || fetchedUser.username || 'Artist';
+                const fullName = fetchedUser.username || 'Artist';
                 setArtistName(fullName);
 
                 const rawGalleries = fetchedUser.gallery || [];

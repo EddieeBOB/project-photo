@@ -20,6 +20,7 @@ export interface Gallery {
     title: string;
     userId: string;
     photos: Photo[];
+    isPublic?: boolean;
 }
 
 export interface Photo {

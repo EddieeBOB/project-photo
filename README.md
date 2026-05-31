@@ -60,9 +60,10 @@ The following features and improvements are planned for upcoming releases:
   - Adding comprehensive error boundary overlays to catch and handle network dropouts gracefully.
   - Optimizing asset delivery via modern formats (WebP/AVIF conversions on the fly) and lazy-loading offscreen image containers.
 
-- [ ] Fix Favicon
+- [x] Fix Favicon
 - [ ] Fix Login Submit Form
-- [ ] Fix 
+- [x] Remove (FirstName, LastName), only use Username
+- [ ] Add Dark Mode
 
 ---
 

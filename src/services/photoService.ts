@@ -396,8 +396,7 @@ export async function fetchFeaturedArtist() {
 
         const row = response.rows[0];
         const title = row?.title ?? 'Untitled';
-        const firstName = row?.gallery?.users?.firstName;
-        const lastName = row?.gallery?.users?.lastName;
+        const artistUsername = row?.gallery?.users?.username;
         const imageId = row?.imageId;
 
         if (!imageId) {
@@ -405,7 +404,7 @@ export async function fetchFeaturedArtist() {
             return null;
         }
 
-        const name = [firstName, lastName].filter(Boolean).join(' ') || 'Anonymous Artist';
+        const name = artistUsername || 'Anonymous Artist';
         const imageUrl = retrieveImageURL(imageId, 500);
 
         return {
@@ -567,7 +566,8 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
  */
 export async function fetchUserGalleryByUsername(username: string) {
     try {
-        const response = await tablesDB.listRows({
+        // 1. Try exact match first
+        let response = await tablesDB.listRows({
             databaseId,
             tableId: 'users',
             queries: [
@@ -575,7 +575,28 @@ export async function fetchUserGalleryByUsername(username: string) {
                 Query.select(['*', 'gallery.*', 'gallery.photos.*'])
             ]
         });
-        return response.rows[0];
+
+        if (response.rows && response.rows.length > 0) {
+            return response.rows[0];
+        }
+
+        // 2. Fallback: Search case-insensitively and whitespace-insensitively
+        response = await tablesDB.listRows({
+            databaseId,
+            tableId: 'users',
+            queries: [
+                Query.limit(100),
+                Query.select(['*', 'gallery.*', 'gallery.photos.*'])
+            ]
+        });
+
+        const targetUsername = username.trim().toLowerCase();
+        const matchedRow = response.rows.find((row: any) => {
+            const dbUsername = (row.username || '').trim().toLowerCase();
+            return dbUsername === targetUsername;
+        });
+
+        return matchedRow || null;
     } catch (error) {
         console.error("Failed to fetch user by username:", error);
         throw error;
