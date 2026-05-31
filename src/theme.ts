@@ -2,14 +2,15 @@ import { styled } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 
 export const colors = {
-    primary: '#000000',
-    onPrimary: '#ffffff',
-    text: '#1A1C1E',
-    textSecondary: '#44474E',
-    borderLight: 'rgba(0, 0, 0, 0.1)',
-    surface: '#F9F9F9',
-    surfaceTransparent: 'rgba(249, 249, 249, 0.8)',
-    surfaceBright: '#FFFFFF',
+    primary: 'var(--primary)',
+    onPrimary: 'var(--on-primary)',
+    text: 'var(--text)',
+    textSecondary: 'var(--text-secondary)',
+    borderLight: 'var(--border)',
+    surface: 'var(--surface)',
+    surfaceTransparent: 'var(--surface-transparent)',
+    surfaceBright: 'var(--surface-bright)',
+    surfaceLow: 'var(--surface-low)',
 };
 
 export const typography = {

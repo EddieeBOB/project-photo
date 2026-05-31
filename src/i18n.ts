@@ -59,11 +59,7 @@ const resources = {
       },
       "footer": {
         "frame": "Frame",
-        "journal": "Journal",
-        "exhibitions": "Exhibitions",
-        "artists": "Artists",
         "privacy": "Privacy",
-        "designSystem": "Luminous Editorial Design System"
       }
     }
   }

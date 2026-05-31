@@ -41,7 +41,7 @@ const StyledTextField = styled(TextField)({
 export default function Login() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const { checkAuth } = useAuth();
@@ -49,7 +49,7 @@ export default function Login() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await handleLoginService(username.trim(), password);
+            await handleLoginService(email.trim(), password);
             await checkAuth(); // Refresh global user state
             navigate('/studio'); // Redirect to studio workspace
         } catch (error: any) {
@@ -96,10 +96,10 @@ export default function Login() {
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             <StyledTextField
                                 fullWidth
-                                label="Username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                label="Email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                             <StyledTextField
