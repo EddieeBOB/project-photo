@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchFeaturedArtist, getHeroPhoto } from '../services/photoService';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import { useNavigate } from 'react-router-dom';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 
@@ -11,6 +12,7 @@ const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 
 export default function Hero() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null } | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -77,8 +79,8 @@ export default function Hero() {
                             {t('hero.description')}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                            <PrimaryButton disableRipple>{t('hero.exploreGallery')}</PrimaryButton>
-                            <SecondaryButton disableRipple>{t('hero.readJournal')}</SecondaryButton>
+                            <PrimaryButton disableRipple onClick={() => navigate('/gallery')}>{t('hero.exploreGallery')}</PrimaryButton>
+                            <SecondaryButton disableRipple onClick={() => navigate('/about')}>{t('hero.about', 'About')}</SecondaryButton>
                         </Box>
                     </Box>
 
