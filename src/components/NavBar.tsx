@@ -85,7 +85,7 @@ export default function NavBar() {
         if (user) {
             links.push({ name: 'Studio', path: '/studio' });
             if (profile?.username) {
-                links.push({ name: 'My Gallery', path: `/user/${profile.username}` });
+                links.push({ name: 'My Public Gallery', path: `/user/${profile.username}` });
             }
         }
         return links;
