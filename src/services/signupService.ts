@@ -38,7 +38,7 @@ export async function handleSignUp(username: string, email: string, password: st
     } catch (dbError: any) {
         console.error("User document creation failed:", dbError);
 
-        // Retry once — transient network issues are common
+        // Retry once because transient network issues are common
         try {
             await tablesDB.createRow({
                 databaseId,

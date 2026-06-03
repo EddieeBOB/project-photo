@@ -2,7 +2,7 @@
 name: Luminous Editorial
 version: 1.0.0
 author: Stitch AI
-description: A bright, airy, and sophisticated design system for Frame, a high-fidelity photo-sharing platform. The system prioritizes "Luminous Editorial" aesthetics—emphasizing generous whitespace, intentionality, and high-resolution visual storytelling.
+description: A bright, airy, and sophisticated design system for Frame, a high-fidelity photo-sharing platform. The system prioritizes "Luminous Editorial" aesthetics, emphasizing generous whitespace, intentionality, and high-resolution visual storytelling.
 
 ## Visual Philosophy
 - **Intentionality over Velocity:** Layouts are designed to slow the user down, favoring large-scale imagery and horizontal movement.
@@ -72,4 +72,4 @@ description: A bright, airy, and sophisticated design system for Frame, a high-f
 ## Interaction Design
 - **Buttons:** Sharp corners (Round Four preset but often appearing as square for editorial feel). Transitions are 300ms ease-in-out.
 - **Links:** Subtle opacity change on hover (80%) or color shift to primary black.
-- **Images:** "Zero Compression" visual treatment—crisp, high-resolution with no visible artifacts.
+- **Images:** "Zero Compression" visual treatment, crisp, high-resolution with no visible artifacts.

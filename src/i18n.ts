@@ -36,7 +36,7 @@ const resources = {
       },
       "errorBoundary": {
         "somethingWentWrong": "Something went wrong.",
-        "unexpectedError": "We're sorry — an unexpected error occurred. Please reload the page to continue.",
+        "unexpectedError": "We're sorry: An unexpected error occurred. Please reload the page to continue.",
         "reloadPage": "Reload Page"
       },
       "studioWorkspace": {
