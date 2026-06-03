@@ -63,17 +63,17 @@ const features = [
     {
         icon: <GlobeIcon />,
         title: "Open Ecosystem",
-        description: "No invite codes or exclusive waitlists. If you have a story to tell through your lens, you belong here."
+        description: "If you have a story to tell through your lens, you belong here."
     },
     {
         icon: <HDIcon />,
-        title: "Zero Compression",
-        description: "We treat your work with respect. High-resolution storage ensures your pixels stay exactly as you intended."
+        title: "Lossy Compression",
+        description: "All images are balanced between quality and file size so you can showcase your work without compromise."
     },
     {
         icon: <UsersIcon />,
-        title: "Inclusive Dialogue",
-        description: "Connect with peers through meaningful critique and collaborative collections in a safe, moderated space."
+        title: "Share your Portfolio",
+        description: "Easily create and share your portfolio with anyone, anywhere."
     }
 ];
 
@@ -92,7 +92,7 @@ export default function FeatureCards() {
                         mb: { xs: 6, md: 8 }
                     }}
                 >
-                    <Box sx={{ maxWidth: '720px' }}>
+                    <Box sx={{ maxWidth: 'auto' }}>
                         <Typography
                             variant="h2"
                             sx={{
@@ -115,7 +115,7 @@ export default function FeatureCards() {
                                 lineHeight: 1.6
                             }}
                         >
-                            We believe photography shouldn't be gated. Frame provides professional-grade tools and presentation for everyone—from the smartphone enthusiast to the seasoned professional.
+                            I believe photography is inherently surrounded by noise due to the platforms that we use to share it. <br /> Frame strips away all the noise and allows you to focus on what matters most. Photos.
                         </Typography>
                     </Box>
                 </Box>
