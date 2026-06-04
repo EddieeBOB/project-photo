@@ -1,5 +1,6 @@
 # Frame. A Home for Every Lens.
 
+# https://photoframes.me
 Frame is a sophisticated, photography-focused web platform designed to prioritize minimalism and high-fidelity visual storytelling. It provides a clean, distraction-free environment for photographers to showcase their portfolios, curate exhibitions, and manage their creative workspaces.
 
 ---
@@ -7,8 +8,10 @@ Frame is a sophisticated, photography-focused web platform designed to prioritiz
 ### THIS IS AN DEMO APP! NOT FOR PRODUCTION USE
 #### Use it at your own risk! 
 #### I am not responsible for any data loss or security breaches.
-
+#### Security measures are implemented on Appwrite
 ---
+
+
 
 ## Website Preview
 
