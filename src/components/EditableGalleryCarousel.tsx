@@ -68,9 +68,10 @@ const EditableInput = styled('input')({
     '&:hover': {
         borderColor: colors.borderLight,
     },
-    '&:focus': {
-        outline: 'none',
-        borderColor: colors.textSecondary,
+    '&:focus-visible': {
+        outline: `2px solid ${colors.text}`,
+        outlineOffset: '2px',
+        borderColor: 'transparent',
         backgroundColor: colors.surfaceBright,
     }
 });
@@ -345,7 +346,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                 }
             });
 
-            setExhibitionTitle("Untitled Title");
+            setExhibitionTitle("Untitled Gallery");
             setIsPublicDraft(false);
             setItems([
                 {
@@ -396,7 +397,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                        backgroundColor: colors.scrim,
                         backdropFilter: 'blur(12px)',
                         border: `2px dashed ${colors.text}`,
                         borderRadius: '0px',
@@ -406,7 +407,9 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                         justifyContent: 'center',
                         zIndex: 1000,
                         pointerEvents: 'none',
-                        animation: 'fadeIn 0.2s ease-in-out',
+                        '@media (prefers-reduced-motion: no-preference)': {
+                            animation: 'fadeIn 0.2s ease-in-out',
+                        },
                         '@keyframes fadeIn': {
                             '0%': { opacity: 0 },
                             '100%': { opacity: 1 }
@@ -420,7 +423,10 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                             alignItems: 'center',
                             p: 4,
                             transform: 'scale(1)',
-                            animation: 'pulseScale 1.5s infinite ease-in-out',
+                            transformOrigin: 'center',
+                            '@media (prefers-reduced-motion: no-preference)': {
+                                animation: 'pulseScale 1.5s infinite ease-in-out',
+                            },
                             '@keyframes pulseScale': {
                                 '0%': { transform: 'scale(1)' },
                                 '50%': { transform: 'scale(1.05)' },
@@ -438,6 +444,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             style={{ marginBottom: '20px' }}
+                            aria-hidden="true"
                         >
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                             <polyline points="17 8 12 3 7 8" />
@@ -502,7 +509,9 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                             <EditableInput
                                 value={exhibitionTitle}
                                 onChange={handleExhibitionTitleChange}
-                                placeholder="Enter exhibition title..."
+                                placeholder="Enter exhibition title…"
+                                aria-label="Exhibition title"
+                                spellCheck={false}
                             />
                         </Typography>
                     </Box>
@@ -526,18 +535,19 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                     alignItems: 'center',
                                     color: isPublicDraft ? colors.text : colors.textSecondary,
                                     borderColor: isPublicDraft ? colors.text : colors.borderLight,
-                                    transition: 'all 0.3s ease',
+                                    transition: 'border-color 0.3s ease, color 0.3s ease, background-color 0.3s ease',
                                     '&:hover': {
                                         borderColor: colors.text,
                                         color: colors.text,
-                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                        backgroundColor: colors.hoverOverlaySubtle
                                     }
                                 }}
-                                aria-label="Toggle gallery visibility"
+                                aria-label={isPublicDraft ? 'Set gallery to private' : 'Set gallery to public'}
+                                aria-pressed={isPublicDraft}
                             >
                                 {isPublicDraft ? (
                                     <>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <circle cx="12" cy="12" r="10"></circle>
                                             <line x1="2" y1="12" x2="22" y2="12"></line>
                                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
@@ -546,7 +556,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                     </>
                                 ) : (
                                     <>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                                         </svg>
@@ -580,7 +590,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     top: 0,
                                                     left: 0,
                                                     bottom: 0,
-                                                    width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                                                    width: `${uploadProgress.total > 0 ? (uploadProgress.current / uploadProgress.total) * 100 : 0}%`,
                                                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
                                                     transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                                                     zIndex: 1
@@ -591,8 +601,8 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                             <CircularProgress size={16} sx={{ color: 'inherit', mr: 1 }} />
                                             <span>
                                                 {uploadProgress
-                                                    ? `Publishing (${uploadProgress.current}/${uploadProgress.total})...`
-                                                    : 'Publishing...'}
+                                                    ? `Publishing (${uploadProgress.current}/${uploadProgress.total})…`
+                                                    : 'Publishing…'}
                                             </span>
                                         </Box>
                                     </>
@@ -610,20 +620,21 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                     <IconButton
                         onClick={handlePrev}
                         disabled={activeIndex === 0}
+                        aria-label="Previous photo"
                         sx={{
                             position: 'absolute',
                             left: { xs: '8px', md: '-24px' },
                             top: '50%',
                             transform: 'translateY(-50%)',
                             zIndex: 10,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backgroundColor: colors.surfaceBright,
                             backdropFilter: 'blur(8px)',
                             border: `1px solid ${colors.borderLight}`,
                             borderRadius: '0px',
                             p: 1.5,
                             color: colors.text,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                            transition: 'all 0.3s ease',
+                            transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                             '&:hover': {
                                 backgroundColor: colors.text,
                                 color: colors.onPrimary,
@@ -635,7 +646,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                             }
                         }}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <polyline points="15 18 9 12 15 6" />
                         </svg>
                     </IconButton>
@@ -644,20 +655,21 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                     <IconButton
                         onClick={handleNext}
                         disabled={activeIndex === items.length - 1}
+                        aria-label="Next photo"
                         sx={{
                             position: 'absolute',
                             right: { xs: '8px', md: '-24px' },
                             top: '50%',
                             transform: 'translateY(-50%)',
                             zIndex: 10,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backgroundColor: colors.surfaceBright,
                             backdropFilter: 'blur(8px)',
                             border: `1px solid ${colors.borderLight}`,
                             borderRadius: '0px',
                             p: 1.5,
                             color: colors.text,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                            transition: 'all 0.3s ease',
+                            transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                             '&:hover': {
                                 backgroundColor: colors.text,
                                 color: colors.onPrimary,
@@ -669,7 +681,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                             }
                         }}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
                     </IconButton>
@@ -681,7 +693,8 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                         sx={{
                             display: 'flex',
                             overflowX: 'auto',
-                            overscrollBehaviorX: 'none',
+                            overscrollBehaviorX: 'contain',
+                            touchAction: 'pan-x',
                             scrollSnapType: 'x mandatory',
                             scrollbarWidth: 'none',
                             '&::-webkit-scrollbar': { display: 'none' },
@@ -721,14 +734,14 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     border: `1px dashed ${colors.borderLight}`,
                                                     p: 6,
                                                     borderRadius: '0px',
-                                                    transition: 'all 0.3s ease',
+                                                    transition: 'border-color 0.3s ease, background-color 0.3s ease',
                                                     '&:hover': {
                                                         borderColor: colors.textSecondary,
-                                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                                        backgroundColor: colors.hoverOverlaySubtle
                                                     }
                                                 }}
                                             >
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '16px', color: colors.textSecondary }}>
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '16px', color: colors.textSecondary }} aria-hidden="true">
                                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                                 </svg>
@@ -745,14 +758,17 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                         <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3, position: 'relative' }}>
                                             <img
                                                 src={item.src}
-                                                alt={item.title}
+                                                alt={item.title || 'Photo to upload'}
                                                 crossOrigin="anonymous"
+                                                loading="lazy"
+                                                width={1200}
+                                                height={675}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
                                             {/* Remove Photo Button */}
                                             <IconButton
                                                 onClick={() => handleRemovePhoto(item.id)}
-                                                aria-label="remove photo"
+                                                aria-label="Remove photo"
                                                 sx={{
                                                     position: 'absolute',
                                                     top: '16px',
@@ -772,15 +788,15 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     gap: 1,
                                                     alignItems: 'center',
                                                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                                    transition: 'all 0.3s ease',
+                                                    transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                                                     '&:hover': {
-                                                        backgroundColor: '#ff4d4f',
-                                                        borderColor: '#ff4d4f',
+                                                        backgroundColor: colors.danger,
+                                                        borderColor: colors.danger,
                                                         color: colors.onPrimary,
                                                     }
                                                 }}
                                             >
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                     <polyline points="3 6 5 6 21 6"></polyline>
                                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                                 </svg>
@@ -795,14 +811,17 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                     <EditableInput
                                                         value={item.title}
                                                         onChange={(e) => updateItemField(item.id, 'title', e.target.value)}
-                                                        placeholder="Enter title..."
+                                                        placeholder="Enter title…"
+                                                        aria-label="Photo title"
+                                                        spellCheck={false}
                                                     />
                                                 </Box>
                                                 <Box sx={{ fontFamily: typography.ui, fontSize: '14px', color: colors.textSecondary, fontStyle: 'italic' }}>
                                                     <EditableInput
                                                         value={item.description}
                                                         onChange={(e) => updateItemField(item.id, 'description', e.target.value)}
-                                                        placeholder="Description..."
+                                                        placeholder="Description…"
+                                                        aria-label="Photo description"
                                                     />
                                                 </Box>
                                             </Box>
@@ -815,6 +834,8 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                             value={item.metadata.exposure}
                                                             onChange={(e) => updateItemField(item.id, 'metadata', e.target.value, 'exposure')}
                                                             style={{ width: '100px' }}
+                                                            aria-label="Exposure"
+                                                            spellCheck={false}
                                                         />
                                                     </Box>
                                                 </Box>
@@ -825,6 +846,9 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                             value={item.metadata.iso}
                                                             onChange={(e) => updateItemField(item.id, 'metadata', e.target.value, 'iso')}
                                                             style={{ width: '60px' }}
+                                                            aria-label="ISO"
+                                                            inputMode="numeric"
+                                                            spellCheck={false}
                                                         />
                                                     </Box>
                                                 </Box>
@@ -835,6 +859,8 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
                                                             value={item.metadata.lens}
                                                             onChange={(e) => updateItemField(item.id, 'metadata', e.target.value, 'lens')}
                                                             style={{ width: '80px' }}
+                                                            aria-label="Lens"
+                                                            spellCheck={false}
                                                         />
                                                     </Box>
                                                 </Box>

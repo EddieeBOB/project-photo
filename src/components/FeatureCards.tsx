@@ -6,7 +6,7 @@ import Grid from '@mui/material/Grid';
 
 // Globe icon
 const GlobeIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="10" />
         <line x1="2" y1="12" x2="22" y2="12" />
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -15,7 +15,7 @@ const GlobeIcon = () => (
 
 // HD icon
 const HDIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
         <path d="M7 9v6M11 9v6M7 12h4M14 9h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2V9z" />
     </svg>
@@ -23,7 +23,7 @@ const HDIcon = () => (
 
 // Users icon
 const UsersIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -40,10 +40,13 @@ const CardContainer = styled(Box)({
     flexDirection: 'column',
     height: '100%',
     backgroundColor: colors.surfaceBright,
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-    '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 12px 24px rgba(0,0,0,0.02)',
+    transformOrigin: 'center',
+    '@media (prefers-reduced-motion: no-preference)': {
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 12px 24px rgba(0,0,0,0.02)',
+        }
     }
 });
 
@@ -115,15 +118,15 @@ export default function FeatureCards() {
                                 lineHeight: 1.6
                             }}
                         >
-                            I believe photography is inherently surrounded by noise due to the platforms that we use to share it. <br /> Frame strips away all the noise and allows you to focus on what matters most. Photos.
+                            I believe photography is inherently surrounded by noise due to the platforms that we use to share it. Frame strips away all the noise and allows you to focus on what matters most. Photos.
                         </Typography>
                     </Box>
                 </Box>
 
                 {/* Cards Section */}
                 <Grid container spacing={{ xs: 4, md: 4 }}>
-                    {features.map((feature, index) => (
-                        <Grid size={{ xs: 12, md: 4 }} key={index}>
+                    {features.map((feature) => (
+                        <Grid size={{ xs: 12, md: 4 }} key={feature.title}>
                             <CardContainer>
                                 <Box sx={{ display: 'flex' }}>
                                     <IconWrapper>

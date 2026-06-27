@@ -24,11 +24,11 @@
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "react-i18next": "17.0.8",
-    "react-router-dom": "7.15.0",
+    "react-router-dom": "7.18.0",
     "tailwindcss": "4.3.0"
   },
   "devDependencies": {
-    "@babel/core": "7.29.0",
+    "@babel/core": "7.29.7",
     "@eslint/js": "10.0.1",
     "@rolldown/plugin-babel": "0.2.3",
     "@types/babel__core": "7.20.5",
@@ -43,12 +43,12 @@
     "globals": "17.5.0",
     "typescript": "6.0.2",
     "typescript-eslint": "8.58.2",
-    "vite": "8.0.10"
+    "vite": "8.1.0"
   },
   "overrides": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@babel/core": "7.29.0",
+    "@babel/core": "7.29.7",
     "@babel/runtime": "^7.26.10",
     "debug": "^4.3.7",
     "minimatch": "^10.2.5",

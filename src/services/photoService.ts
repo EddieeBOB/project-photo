@@ -1,5 +1,5 @@
-import { ID, Query, type Models } from 'appwrite';
-import { tablesDB, storage } from '../lib/appwrite';
+import { ID, Query, Permission, Role, type Models } from 'appwrite';
+import { account, tablesDB, storage } from '../lib/appwrite';
 import pica from 'pica';
 import type { Gallery, Photo, CarouselPhoto } from '../components/EditableGalleryCarousel';
 import exifr from 'exifr';
@@ -7,6 +7,29 @@ import exifr from 'exifr';
 
 const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+
+// Upload constraints. These are also enforced server-side by the Appwrite bucket
+// configuration; the client-side checks are a first line of defense / better UX only.
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+
+/**
+ * Builds the document/file permission set for a resource owned by `ownerId`.
+ * The owner always has full read/write/delete; public resources additionally
+ * grant read to anyone. This makes authorization enforced by Appwrite at the
+ * document level rather than relying on permissive collection-wide defaults.
+ */
+function ownerPermissions(ownerId: string, isPublic: boolean): string[] {
+    const perms = [
+        Permission.read(Role.user(ownerId)),
+        Permission.update(Role.user(ownerId)),
+        Permission.delete(Role.user(ownerId)),
+    ];
+    if (isPublic) {
+        perms.push(Permission.read(Role.any()));
+    }
+    return perms;
+}
 
 /**
  * Processes an array of File objects and maps them to CarouselPhoto objects.
@@ -17,7 +40,9 @@ const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
  * @returns Array of CarouselPhoto objects
  */
 export async function processFiles(files: File[]): Promise<CarouselPhoto[]> {
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    const imageFiles = files.filter(file =>
+        ALLOWED_IMAGE_TYPES.includes(file.type) && file.size > 0 && file.size <= MAX_FILE_SIZE_BYTES
+    );
     const photoPromises = imageFiles.map(async (file, idx) => {
         const previewUrl = URL.createObjectURL(file);
         const title = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
@@ -163,11 +188,17 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
  */
 export async function createGallery(
     galleryTitle: string,
-    userId: string,
+    _userId: string,
     gallery: Gallery,
     isPublic: boolean = false,
     onProgress?: (current: number, total: number) => void
 ) {
+
+    // Derive the owner from the authenticated session rather than trusting a
+    // client-supplied id. This prevents a tampered client from attributing a
+    // gallery to another user.
+    const me = await account.get();
+    const ownerId = me.$id;
 
     // Create UUID for gallery
     const guuid = ID.unique();
@@ -182,9 +213,10 @@ export async function createGallery(
             rowId: guuid,
             data: {
                 galleryTitle: galleryTitle,
-                users: userId,
+                users: ownerId,
                 isPublic: isPublic
-            }
+            },
+            permissions: ownerPermissions(ownerId, isPublic)
         });
 
         // Create rows for each photo with a dynamically generated UUID
@@ -193,7 +225,7 @@ export async function createGallery(
         for (const photo of gallery.photos) {
             const photoId = ID.unique();
             photoIds.push(photoId);
-            const imageId = await createImage(photo, photoId, guuid);
+            const imageId = await createImage(photo, photoId, guuid, ownerId, isPublic);
             if (imageId) {
                 uploadedFileIds.push(imageId);
             }
@@ -247,11 +279,11 @@ export async function createGallery(
  * @param userId - The ID of the currently logged-in user
  * @param galleryId - The ID of the parent gallery document
  */
-export async function createImage(item: Photo, uuid: string, galleryId: string) {
+export async function createImage(item: Photo, uuid: string, galleryId: string, ownerId: string, isPublic: boolean) {
     if (!item.file) return null;
 
     // Await the image upload first to get the string ID back!
-    const imageId = await uploadImage(item.file);
+    const imageId = await uploadImage(item.file, ownerId, isPublic);
 
     try {
         // Await the creation of the row
@@ -268,7 +300,8 @@ export async function createImage(item: Photo, uuid: string, galleryId: string) 
                 isFrontPage: false,
                 imageId: imageId,
                 gallery: galleryId
-            }
+            },
+            permissions: ownerPermissions(ownerId, isPublic)
         });
 
         return imageId;
@@ -296,8 +329,17 @@ export async function createImage(item: Photo, uuid: string, galleryId: string) 
  * @param userId - The ID of the currently logged-in user (for setting permissions)
  * @returns A Promise that resolves to the Appwrite storage file ID (buuid)
  */
-export async function uploadImage(file: File | Blob) {
+export async function uploadImage(file: File | Blob, ownerId: string, isPublic: boolean) {
     try {
+        // Reject anything that is not an allowed image type or exceeds the size cap.
+        // (The Appwrite bucket must enforce the same limits server-side.)
+        if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+            throw new Error('Unsupported file type.');
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            throw new Error('File exceeds the maximum allowed size.');
+        }
+
         // 1. Resize Image if it is a File (and not already resized/blob)
         let fileToUpload: File;
         if (file instanceof File) {
@@ -313,7 +355,8 @@ export async function uploadImage(file: File | Blob) {
         await storage.createFile({
             bucketId,
             fileId: buuid,
-            file: fileToUpload
+            file: fileToUpload,
+            permissions: ownerPermissions(ownerId, isPublic)
         });
         return buuid;
     } catch (error) {
@@ -386,7 +429,8 @@ export async function fetchFeaturedArtist() {
             queries: [
                 Query.equal('isFrontPage', true),
                 Query.limit(1),
-                Query.select(['*', 'gallery.*', 'gallery.users.*'])
+                // Only pull the username from the related user — never email/PII.
+                Query.select(['*', 'gallery.*', 'gallery.users.username'])
             ]
         });
 
@@ -544,14 +588,68 @@ export async function deleteGallery(galleryId: string) {
  */
 export async function updateGalleryVisibility(galleryId: string, isPublic: boolean) {
     try {
+        // Owner is taken from the authenticated session so permissions can't be
+        // reassigned to another user via a tampered request.
+        const me = await account.get();
+        const ownerId = me.$id;
+        const perms = ownerPermissions(ownerId, isPublic);
+
+        // 1. Update the gallery row's data and read permissions together, so a
+        // "private" gallery is actually unreadable by others at the API level
+        // (not merely hidden by the client).
         await tablesDB.updateRow({
             databaseId,
             tableId: 'gallery',
             rowId: galleryId,
             data: {
                 isPublic: isPublic
-            }
+            },
+            permissions: perms
         });
+
+        // 2. Cascade the same read permissions to every photo row and storage
+        // file that belongs to this gallery.
+        const allPhotos: any[] = [];
+        let offset = 0;
+        while (true) {
+            const response = await tablesDB.listRows({
+                databaseId,
+                tableId: 'photos',
+                queries: [
+                    Query.equal('gallery', galleryId),
+                    Query.limit(100),
+                    Query.offset(offset)
+                ]
+            });
+            allPhotos.push(...response.rows);
+            if (response.rows.length < 100) break;
+            offset += 100;
+        }
+
+        await Promise.all(allPhotos.map(async (photo: any) => {
+            try {
+                await tablesDB.updateRow({
+                    databaseId,
+                    tableId: 'photos',
+                    rowId: photo.$id,
+                    data: {},
+                    permissions: perms
+                });
+            } catch (err) {
+                console.warn(`Failed to update permissions for photo ${photo.$id}:`, err);
+            }
+            if (photo.imageId) {
+                try {
+                    await storage.updateFile({
+                        bucketId,
+                        fileId: photo.imageId,
+                        permissions: perms
+                    });
+                } catch (err) {
+                    console.warn(`Failed to update permissions for file ${photo.imageId}:`, err);
+                }
+            }
+        }));
     } catch (error) {
         console.error("Failed to update gallery visibility:", error);
         throw error;
@@ -566,13 +664,17 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
  */
 export async function fetchUserGalleryByUsername(username: string) {
     try {
+        // Only select the public-safe fields. Never request '*' on users here,
+        // which would ship every user's email to the browser.
+        const publicUserFields = ['username', 'gallery.*', 'gallery.photos.*'];
+
         // 1. Try exact match first
         let response = await tablesDB.listRows({
             databaseId,
             tableId: 'users',
             queries: [
                 Query.equal('username', username),
-                Query.select(['*', 'gallery.*', 'gallery.photos.*'])
+                Query.select(publicUserFields)
             ]
         });
 
@@ -586,7 +688,7 @@ export async function fetchUserGalleryByUsername(username: string) {
             tableId: 'users',
             queries: [
                 Query.limit(100),
-                Query.select(['*', 'gallery.*', 'gallery.photos.*'])
+                Query.select(publicUserFields)
             ]
         });
 

@@ -29,13 +29,13 @@ export default function PrivacyPolicy({ onClose }: PrivacyPolicyProps) {
                         float: 'right',
                         zIndex: 10,
                         color: colors.text,
-                        backgroundColor: 'rgba(0, 0, 0, 0.09)',
+                        backgroundColor: colors.hoverOverlay,
                         borderRadius: '0px',
                         border: `1px solid ${colors.borderLight}`,
-                        transition: 'all 0.2s ease',
+                        transition: 'background-color 0.2s ease, color 0.2s ease',
                         '&:hover': {
                             backgroundColor: colors.text,
-                            color: colors.onPrimary || '#ffffff',
+                            color: colors.onPrimary,
                         }
                     }}
                     aria-label="Close privacy policy"

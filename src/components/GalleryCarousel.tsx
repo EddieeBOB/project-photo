@@ -58,7 +58,7 @@ const ProgressBar = styled(Box, {
     transition: 'background-color 0.3s ease',
 }));
 
-export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Julian Vossen', index, onDelete, onTogglePublic, onDeletePhoto, disableHeaderPadding }: GalleryCarouselProps) {
+export default function GalleryCarousel({ gallery = defaultGallery, authorName = 'Frame Artist', index, onDelete, onTogglePublic, onDeletePhoto, disableHeaderPadding }: GalleryCarouselProps) {
     const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = React.useState(0);
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -174,7 +174,8 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                         {onTogglePublic && gallery.id !== 'default' && (
                             <IconButton
                                 onClick={() => onTogglePublic(gallery.id, !gallery.isPublic)}
-                                aria-label="toggle gallery visibility"
+                                aria-label={gallery.isPublic ? 'Make gallery private' : 'Make gallery public'}
+                                aria-pressed={Boolean(gallery.isPublic)}
                                 sx={{
                                     border: `1px solid ${gallery.isPublic ? colors.text : colors.borderLight}`,
                                     borderRadius: '0px',
@@ -188,17 +189,17 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                     gap: 1.5,
                                     alignItems: 'center',
                                     color: gallery.isPublic ? colors.text : colors.textSecondary,
-                                    transition: 'all 0.3s ease',
+                                    transition: 'border-color 0.3s ease, color 0.3s ease, background-color 0.3s ease',
                                     '&:hover': {
                                         borderColor: colors.text,
                                         color: colors.text,
-                                        backgroundColor: 'rgba(0,0,0,0.02)'
+                                        backgroundColor: colors.hoverOverlaySubtle
                                     }
                                 }}
                             >
                                 {gallery.isPublic ? (
                                     <>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <circle cx="12" cy="12" r="10"></circle>
                                             <line x1="2" y1="12" x2="22" y2="12"></line>
                                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
@@ -207,7 +208,7 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                     </>
                                 ) : (
                                     <>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                                         </svg>
@@ -226,10 +227,10 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                         setConfirmDelete(true);
                                     }
                                 }}
-                                aria-label="delete gallery"
+                                aria-label={confirmDelete ? 'Confirm delete gallery' : 'Delete gallery'}
                                 sx={{
-                                    backgroundColor: confirmDelete ? '#ff4d4f' : 'transparent',
-                                    border: `1px solid ${confirmDelete ? '#ff4d4f' : colors.borderLight}`,
+                                    backgroundColor: confirmDelete ? colors.danger : 'transparent',
+                                    border: `1px solid ${confirmDelete ? colors.danger : colors.borderLight}`,
                                     borderRadius: '0px',
                                     p: '8px 12px',
                                     fontSize: '11px',
@@ -241,15 +242,15 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                     gap: 1,
                                     alignItems: 'center',
                                     color: confirmDelete ? colors.onPrimary : colors.textSecondary,
-                                    transition: 'all 0.3s ease',
+                                    transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                                     '&:hover': {
-                                        backgroundColor: '#ff4d4f',
-                                        borderColor: '#ff4d4f',
+                                        backgroundColor: colors.danger,
+                                        borderColor: colors.danger,
                                         color: colors.onPrimary,
                                     }
                                 }}
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                     <polyline points="3 6 5 6 21 6"></polyline>
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                 </svg>
@@ -265,20 +266,21 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                     <IconButton
                         onClick={handlePrev}
                         disabled={activeIndex === 0}
+                        aria-label="Previous photo"
                         sx={{
                             position: 'absolute',
                             left: { xs: '8px', md: '-24px' },
                             top: '50%',
                             transform: 'translateY(-50%)',
                             zIndex: 10,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backgroundColor: colors.surfaceBright,
                             backdropFilter: 'blur(8px)',
                             border: `1px solid ${colors.borderLight}`,
                             borderRadius: '0px',
                             p: 1.5,
                             color: colors.text,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                            transition: 'all 0.3s ease',
+                            transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                             '&:hover': {
                                 backgroundColor: colors.text,
                                 color: colors.onPrimary,
@@ -290,7 +292,7 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                             }
                         }}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <polyline points="15 18 9 12 15 6" />
                         </svg>
                     </IconButton>
@@ -299,20 +301,21 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                     <IconButton
                         onClick={handleNext}
                         disabled={activeIndex === displayItems.length - 1}
+                        aria-label="Next photo"
                         sx={{
                             position: 'absolute',
                             right: { xs: '8px', md: '-24px' },
                             top: '50%',
                             transform: 'translateY(-50%)',
                             zIndex: 10,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backgroundColor: colors.surfaceBright,
                             backdropFilter: 'blur(8px)',
                             border: `1px solid ${colors.borderLight}`,
                             borderRadius: '0px',
                             p: 1.5,
                             color: colors.text,
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                            transition: 'all 0.3s ease',
+                            transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
                             '&:hover': {
                                 backgroundColor: colors.text,
                                 color: colors.onPrimary,
@@ -324,7 +327,7 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                             }
                         }}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
                     </IconButton>
@@ -336,7 +339,8 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                         sx={{
                             display: 'flex',
                             overflowX: 'auto',
-                            overscrollBehaviorX: 'none',
+                            overscrollBehaviorX: 'contain',
+                            touchAction: 'pan-x',
                             scrollSnapType: 'x mandatory',
                             scrollbarWidth: 'none',
                             '&::-webkit-scrollbar': { display: 'none' },
@@ -371,32 +375,35 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                 <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3, position: 'relative' }}>
                                     <img
                                         src={item.src}
-                                        alt={item.title}
+                                        alt={item.title || 'Untitled photograph'}
                                         crossOrigin="anonymous"
+                                        loading="lazy"
+                                        width={1200}
+                                        height={675}
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     />
                                     {onDeletePhoto && (
                                         <IconButton
                                             onClick={() => onDeletePhoto(gallery.id, item.id)}
-                                            aria-label="delete photo"
+                                            aria-label="Delete photo"
                                             sx={{
                                                 position: 'absolute',
                                                 top: 12,
                                                 right: 12,
-                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                backgroundColor: colors.surfaceBright,
                                                 border: `1px solid ${colors.borderLight}`,
                                                 borderRadius: '0px',
                                                 color: colors.textSecondary,
                                                 '&:hover': {
-                                                    backgroundColor: '#ff4d4f',
-                                                    borderColor: '#ff4d4f',
-                                                    color: '#fff',
+                                                    backgroundColor: colors.danger,
+                                                    borderColor: colors.danger,
+                                                    color: colors.onPrimary,
                                                 },
-                                                transition: 'all 0.2s ease',
+                                                transition: 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease',
                                                 p: 1
                                             }}
                                         >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                 <polyline points="3 6 5 6 21 6"></polyline>
                                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                             </svg>
@@ -432,15 +439,15 @@ export default function GalleryCarousel({ gallery = defaultGallery, authorName =
                                     <Box sx={{ display: 'flex', gap: { xs: 2, md: 3 }, borderLeft: `1px solid ${colors.borderLight}`, pl: { xs: 2, md: 3 } }}>
                                         <Box>
                                             <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('galleryCarousel.exposure')}</Typography>
-                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.exposure || 'N/A'}</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{item.metadata?.exposure || 'N/A'}</Typography>
                                         </Box>
                                         <Box>
                                             <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('galleryCarousel.iso')}</Typography>
-                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.iso || 'N/A'}</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{item.metadata?.iso || 'N/A'}</Typography>
                                         </Box>
                                         <Box>
                                             <Typography sx={{ fontFamily: typography.ui, fontSize: '10px', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>{t('galleryCarousel.lens')}</Typography>
-                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text }}>{item.metadata?.lens || 'N/A'}</Typography>
+                                            <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{item.metadata?.lens || 'N/A'}</Typography>
                                         </Box>
                                     </Box>
                                 </Box>

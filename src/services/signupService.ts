@@ -48,7 +48,7 @@ export async function handleSignUp(username: string, email: string, password: st
             });
         } catch (retryError: any) {
             console.error(
-                `ORPHANED ACCOUNT DETECTED: userId=${userId}, email=${email}. ` +
+                `ORPHANED ACCOUNT DETECTED: userId=${userId}. ` +
                 `Auth account exists but user document creation failed after retry. ` +
                 `Manual cleanup required in Appwrite Console.`,
                 retryError
