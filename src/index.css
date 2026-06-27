@@ -11,6 +11,10 @@
   --surface-bright: #FFFFFF;
   --surface-low: #F3F3F3;
   --border: rgba(0, 0, 0, 0.1);
+  --hover-overlay: rgba(0, 0, 0, 0.05);
+  --hover-overlay-subtle: rgba(0, 0, 0, 0.02);
+  --scrim: rgba(255, 255, 255, 0.85);
+  --danger: #ff4d4f;
 
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --heading: 'Playfair Display', Georgia, serif;
@@ -36,11 +40,16 @@
   --surface-bright: #3a3939;
   --surface-low: #1c1b1b;
   --border: rgba(255, 255, 255, 0.15);
+  --hover-overlay: rgba(255, 255, 255, 0.08);
+  --hover-overlay-subtle: rgba(255, 255, 255, 0.04);
+  --scrim: rgba(19, 19, 19, 0.85);
   color-scheme: dark;
 }
 
-body, main, header, footer, .MuiBox-root, .MuiContainer-root, .MuiPaper-root, .MuiButton-root {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+@media (prefers-reduced-motion: no-preference) {
+  body, main, header, footer, .MuiBox-root, .MuiContainer-root, .MuiPaper-root, .MuiButton-root {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
 }
 
 #root {
@@ -65,6 +74,13 @@ h4 {
   font-weight: 400;
   color: var(--text);
   margin: 0;
+  text-wrap: balance;
+}
+
+/* Visible focus for any keyboard-focused interactive element lacking its own */
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 p {
@@ -89,4 +105,11 @@ p {
   height: 1em;
   width: 100%;
   border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background-color: var(--surface-low);
+  }
 }

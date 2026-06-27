@@ -68,7 +68,10 @@ export default function SignUp() {
             }}>
                 <img
                     src={getSignupPhoto()}
-                    alt="Luminous Editorial Image"
+                    alt=""
+                    width={1200}
+                    height={1600}
+                    loading="lazy"
                     style={{
                         position: 'absolute',
                         top: 0,
@@ -119,6 +122,9 @@ export default function SignUp() {
                                 fullWidth
                                 label="Username"
                                 type="text"
+                                name="username"
+                                autoComplete="username"
+                                spellCheck={false}
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
@@ -127,6 +133,10 @@ export default function SignUp() {
                                 fullWidth
                                 label="Email"
                                 type="email"
+                                name="email"
+                                autoComplete="email"
+                                inputMode="email"
+                                spellCheck={false}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -135,6 +145,8 @@ export default function SignUp() {
                                 fullWidth
                                 label="Password"
                                 type="password"
+                                name="password"
+                                autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required

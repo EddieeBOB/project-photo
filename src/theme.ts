@@ -11,6 +11,10 @@ export const colors = {
     surfaceTransparent: 'var(--surface-transparent)',
     surfaceBright: 'var(--surface-bright)',
     surfaceLow: 'var(--surface-low)',
+    hoverOverlay: 'var(--hover-overlay)',
+    hoverOverlaySubtle: 'var(--hover-overlay-subtle)',
+    scrim: 'var(--scrim)',
+    danger: 'var(--danger, #ff4d4f)',
 };
 
 export const typography = {
@@ -29,12 +33,16 @@ export const PrimaryButton = styled(Button)({
     backgroundColor: colors.primary,
     padding: '12px 32px',
     border: `1px solid ${colors.primary}`,
-    transition: 'all 0.3s ease-in-out',
+    transition: 'background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out',
     boxShadow: 'none',
     '&:hover': {
         backgroundColor: 'transparent',
         color: colors.primary,
         boxShadow: 'none',
+    },
+    '&:focus-visible': {
+        outline: `2px solid ${colors.primary}`,
+        outlineOffset: '2px',
     }
 });
 
@@ -49,10 +57,14 @@ export const SecondaryButton = styled(Button)({
     backgroundColor: 'transparent',
     padding: '12px 32px',
     border: `1px solid ${colors.borderLight}`,
-    transition: 'all 0.3s ease-in-out',
+    transition: 'background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out',
     boxShadow: 'none',
     '&:hover': {
-        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        backgroundColor: colors.hoverOverlay,
         boxShadow: 'none',
+    },
+    '&:focus-visible': {
+        outline: `2px solid ${colors.text}`,
+        outlineOffset: '2px',
     }
 });

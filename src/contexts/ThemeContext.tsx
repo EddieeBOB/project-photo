@@ -31,6 +31,19 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
+    // Track system preference live, unless the user has set an explicit preference
+    React.useEffect(() => {
+        if (!window.matchMedia) return;
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = (e: MediaQueryListEvent) => {
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        };
+        mql.addEventListener('change', onChange);
+        return () => mql.removeEventListener('change', onChange);
+    }, []);
+
     const toggleTheme = React.useCallback(() => {
         setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
     }, []);

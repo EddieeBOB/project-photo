@@ -13,7 +13,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Typography from '@mui/material/Typography';
 import Menu from '@mui/material/Menu';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
@@ -22,14 +22,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const UserIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
         <circle cx="12" cy="7" r="4" />
     </svg>
 );
 
 const SunIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="5" />
         <line x1="12" y1="1" x2="12" y2="3" />
         <line x1="12" y1="21" x2="12" y2="23" />
@@ -43,7 +43,7 @@ const SunIcon = () => (
 );
 
 const MoonIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
 );
@@ -61,10 +61,10 @@ function ThemeToggle() {
                 p: 1,
                 border: `1px solid ${colors.borderLight}`,
                 borderRadius: '0px',
-                transition: 'all 0.3s ease',
+                transition: 'border-color 0.3s ease, background-color 0.3s ease',
                 '&:hover': {
                     borderColor: colors.text,
-                    backgroundColor: 'rgba(0,0,0,0.02)',
+                    backgroundColor: colors.hoverOverlaySubtle,
                 }
             }}
         >
@@ -94,7 +94,7 @@ const NavButton = styled(Button)({
     textTransform: 'uppercase',
     borderRadius: '0px',
     padding: '8px 16px',
-    transition: 'all 0.3s ease-in-out',
+    transition: 'color 0.3s ease-in-out',
     position: 'relative',
     overflow: 'hidden',
     '&::after': {
@@ -105,7 +105,7 @@ const NavButton = styled(Button)({
         width: '0%',
         height: '1px',
         backgroundColor: colors.primary,
-        transition: 'all 0.3s ease',
+        transition: 'width 0.3s ease',
         transform: 'translateX(-50%)',
     },
     '&:hover': {
@@ -174,24 +174,27 @@ export default function NavBar() {
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Typography
                             variant="h6"
-                            onClick={() => navigate('/')}
-                            role="button"
-                            tabIndex={0}
-                            aria-label="Navigate to Home"
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+                            component={RouterLink}
+                            to="/"
+                            aria-label="Frame — go to home"
                             sx={{
                                 fontFamily: typography.headline,
                                 color: colors.text,
                                 fontSize: '24px',
                                 letterSpacing: '0.02em',
                                 cursor: 'pointer',
+                                textDecoration: 'none',
+                                '&:focus-visible': {
+                                    outline: `2px solid ${colors.text}`,
+                                    outlineOffset: '4px',
+                                },
                             }}
                         >
                             {t('nav.frame')}
                         </Typography>
                         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
                             {navLinks.map((item) => (
-                                <NavButton key={item.name} disableRipple onClick={() => navigate(item.path)}>
+                                <NavButton key={item.name} {...({ component: RouterLink, to: item.path } as object)} disableRipple>
                                     {item.name}
                                 </NavButton>
                             ))}
@@ -209,15 +212,18 @@ export default function NavBar() {
                             <>
                                 <IconButton
                                     onClick={handleMenuOpen}
+                                    aria-label="Open account menu"
+                                    aria-haspopup="true"
+                                    aria-expanded={Boolean(anchorEl)}
                                     sx={{
                                         color: colors.text,
                                         p: 1,
                                         border: `1px solid ${colors.borderLight}`,
                                         borderRadius: '0px',
-                                        transition: 'all 0.3s ease',
+                                        transition: 'border-color 0.3s ease, background-color 0.3s ease',
                                         '&:hover': {
                                             borderColor: colors.textSecondary,
-                                            backgroundColor: 'rgba(0,0,0,0.02)',
+                                            backgroundColor: colors.hoverOverlaySubtle,
                                         }
                                     }}
                                 >
@@ -246,7 +252,7 @@ export default function NavBar() {
                                                     py: 1.5,
                                                     px: 2,
                                                     '&:hover': {
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                                        backgroundColor: colors.hoverOverlaySubtle,
                                                     }
                                                 }
                                             }
@@ -281,7 +287,7 @@ export default function NavBar() {
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1.5 }}>
                         <ThemeToggle />
-                        <IconButton aria-label="Menu button" onClick={toggleDrawer(true)} sx={{ color: colors.text }}>
+                        <IconButton aria-label="Open navigation menu" aria-expanded={open} onClick={toggleDrawer(true)} sx={{ color: colors.text }}>
                             <MenuIcon />
                         </IconButton>
                         <Drawer
@@ -294,12 +300,13 @@ export default function NavBar() {
                                     backgroundColor: colors.surfaceTransparent,
                                     borderBottom: `1px solid ${colors.borderLight}`,
                                     borderRadius: '0px',
+                                    overscrollBehavior: 'contain',
                                 }
                             }}
                         >
                             <Box sx={{ p: 3 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                                    <IconButton onClick={toggleDrawer(false)} sx={{ color: colors.text }}>
+                                    <IconButton aria-label="Close navigation menu" onClick={toggleDrawer(false)} sx={{ color: colors.text }}>
                                         <CloseRoundedIcon />
                                     </IconButton>
                                 </Box>
@@ -310,7 +317,7 @@ export default function NavBar() {
                                             setOpen(false);
                                             navigate(item.path);
                                         }}
-                                        sx={{ py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.05)' } }}
+                                        sx={{ py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: colors.hoverOverlay } }}
                                     >
                                         <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{item.name}</Typography>
                                     </MenuItem>

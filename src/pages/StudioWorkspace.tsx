@@ -111,7 +111,13 @@ export default function StudioWorkspace() {
         }
     }, [user, loadGallery]);
 
-    if (loading) return null;
+    if (loading) {
+        return (
+            <Box sx={{ pt: { xs: 8, md: 16 }, pb: 8 }}>
+                <GalleryCarouselSkeleton disableHeaderPadding />
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ pt: { xs: 8, md: 16 }, pb: 8 }}>

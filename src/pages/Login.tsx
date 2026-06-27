@@ -98,6 +98,10 @@ export default function Login() {
                                 fullWidth
                                 label="Email"
                                 type="email"
+                                name="email"
+                                autoComplete="email"
+                                inputMode="email"
+                                spellCheck={false}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -106,6 +110,8 @@ export default function Login() {
                                 fullWidth
                                 label="Password"
                                 type="password"
+                                name="password"
+                                autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
@@ -141,7 +147,10 @@ export default function Login() {
             }}>
                 <img
                     src={getLoginPhoto()}
-                    alt="Luminous Editorial Image"
+                    alt=""
+                    width={1200}
+                    height={1600}
+                    loading="lazy"
                     style={{
                         position: 'absolute',
                         top: 0,

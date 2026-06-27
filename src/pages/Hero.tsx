@@ -60,7 +60,8 @@ export default function Hero() {
                                 letterSpacing: '-0.02em',
                                 lineHeight: 1.1,
                                 mb: 3,
-                                whiteSpace: { md: 'nowrap' }
+                                whiteSpace: { md: 'nowrap' },
+                                textWrap: 'balance'
                             }}
                         >
                             {HeroTitle[0].title} <br /> {HeroTitle[0].subtitle}
@@ -102,7 +103,10 @@ export default function Hero() {
                             >
                                 <img
                                     src={artistData?.imageUrl || getHeroPhoto()}
-                                    alt="Luminous Gallery Interior"
+                                    alt={artistData?.name ? `Featured work by ${artistData.name}` : 'Featured photography'}
+                                    width={480}
+                                    height={600}
+                                    fetchPriority="high"
                                     style={{
                                         width: '100%',
                                         height: '100%',

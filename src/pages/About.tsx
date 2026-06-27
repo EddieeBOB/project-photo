@@ -22,14 +22,6 @@ export default function About() {
                     backgroundColor: colors.surfaceLow,
                 }}
             >
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundColor: colors.surfaceTransparent,
-                        zIndex: 1,
-                    }}
-                />
                 <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, position: 'relative', zIndex: 2, textAlign: 'center' }}>
                     <Typography
                         variant="h1"

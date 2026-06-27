@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 *.env
+*.claude
+*.mcp.json
+# Appwrite config (contains project IDs / not for VCS)
+appwrite.config.json
