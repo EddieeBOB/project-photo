@@ -1,4 +1,5 @@
 import { account, ID, tablesDB } from "../lib/appwrite";
+import { sendVerificationEmail } from "./authService";
 
 export async function handleSignUp(username: string, email: string, password: string) {
     const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -54,9 +55,17 @@ export async function handleSignUp(username: string, email: string, password: st
                 retryError
             );
             try {
-                await account.deleteSession('current');
+                await account.deleteSession({ sessionId: 'current' });
             } catch { /* best effort */ }
             throw new Error("Account setup failed. Please contact support or try again later.");
         }
+    }
+
+    // Step 4: Send a verification email (best-effort — failure here must not
+    // break signup; the user can resend from the account page).
+    try {
+        await sendVerificationEmail();
+    } catch (verifyError) {
+        console.warn("Failed to send verification email after signup:", verifyError);
     }
 }

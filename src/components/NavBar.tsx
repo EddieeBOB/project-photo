@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
 import Drawer from '@mui/material/Drawer';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -148,7 +149,7 @@ export default function NavBar() {
 
     const handleLogout = async () => {
         try {
-            await account.deleteSession('current');
+            await account.deleteSession({ sessionId: 'current' });
             await checkAuth(); // Refresh global auth context state (sets user to null)
             navigate('/');
         } catch (error) {
@@ -269,6 +270,9 @@ export default function NavBar() {
                                             {user.name || user.email}
                                         </Typography>
                                     </Box>
+                                    <MenuItem onClick={() => navigate('/account')}>
+                                        {t('nav.account', 'Account')}
+                                    </MenuItem>
                                     <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                                         {t('nav.logOut')}
                                     </MenuItem>
@@ -310,6 +314,7 @@ export default function NavBar() {
                                         <CloseRoundedIcon />
                                     </IconButton>
                                 </Box>
+                                <MenuList sx={{ p: 0 }}>
                                 {navLinks.map((item) => (
                                     <MenuItem
                                         key={item.name}
@@ -333,6 +338,12 @@ export default function NavBar() {
                                                 {user.name || user.email}
                                             </Typography>
                                         </Box>
+                                        <MenuItem
+                                            onClick={() => { setOpen(false); navigate('/account'); }}
+                                            sx={{ py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: colors.hoverOverlay } }}
+                                        >
+                                            <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{t('nav.account', 'Account')}</Typography>
+                                        </MenuItem>
                                         <MenuItem sx={{ p: 0 }}>
                                             <SecondaryButton fullWidth disableRipple onClick={() => {
                                                 setOpen(false);
@@ -362,6 +373,7 @@ export default function NavBar() {
                                         </MenuItem>
                                     </>
                                 )}
+                                </MenuList>
                             </Box>
                         </Drawer>
                     </Box>

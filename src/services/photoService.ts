@@ -1,5 +1,6 @@
-import { ID, Query, Permission, Role, type Models } from 'appwrite';
+import { ID, Query, type Models } from 'appwrite';
 import { account, tablesDB, storage } from '../lib/appwrite';
+import { ownerPermissions } from '../lib/permissions';
 import pica from 'pica';
 import type { Gallery, Photo, CarouselPhoto } from '../components/EditableGalleryCarousel';
 import exifr from 'exifr';
@@ -12,24 +13,6 @@ const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 // configuration; the client-side checks are a first line of defense / better UX only.
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
-
-/**
- * Builds the document/file permission set for a resource owned by `ownerId`.
- * The owner always has full read/write/delete; public resources additionally
- * grant read to anyone. This makes authorization enforced by Appwrite at the
- * document level rather than relying on permissive collection-wide defaults.
- */
-function ownerPermissions(ownerId: string, isPublic: boolean): string[] {
-    const perms = [
-        Permission.read(Role.user(ownerId)),
-        Permission.update(Role.user(ownerId)),
-        Permission.delete(Role.user(ownerId)),
-    ];
-    if (isPublic) {
-        perms.push(Permission.read(Role.any()));
-    }
-    return perms;
-}
 
 /**
  * Processes an array of File objects and maps them to CarouselPhoto objects.

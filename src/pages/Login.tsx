@@ -1,59 +1,81 @@
 import { useState } from 'react';
-import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { handleLogin as handleLoginService } from '../services/loginService';
+import { startEmailMfaChallenge, completeMfaChallenge, sendMagicUrl, abortPartialSession } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import { getLoginPhoto } from '../services/photoService';
 
-import { colors, typography, PrimaryButton } from '../theme';
+import { colors, typography, PrimaryButton, SecondaryButton, StyledTextField } from '../theme';
 
-const StyledTextField = styled(TextField)({
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '0px',
-        fontFamily: typography.ui,
-        backgroundColor: colors.surfaceBright,
-        '& fieldset': {
-            borderColor: colors.borderLight,
-        },
-        '&:hover fieldset': {
-            borderColor: colors.textSecondary,
-        },
-        '&.Mui-focused fieldset': {
-            borderColor: colors.primary,
-            borderWidth: '1px',
-        },
-    },
-    '& .MuiInputLabel-root': {
-        fontFamily: typography.ui,
-        color: colors.textSecondary,
-        '&.Mui-focused': {
-            color: colors.primary,
-        }
-    }
-});
+type Mode = 'password' | 'mfa' | 'magicSent';
 
 export default function Login() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [otp, setOtp] = useState('');
+    const [challengeId, setChallengeId] = useState<string | null>(null);
+    const [mode, setMode] = useState<Mode>('password');
+    const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [infoMsg, setInfoMsg] = useState<string | null>(null);
     const { checkAuth } = useAuth();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
-            await handleLoginService(email.trim(), password);
-            await checkAuth(); // Refresh global user state
-            navigate('/studio'); // Redirect to studio workspace
+            const { mfaRequired } = await handleLoginService(email.trim(), password);
+            if (mfaRequired) {
+                const id = await startEmailMfaChallenge();
+                setChallengeId(id);
+                setMode('mfa');
+                setInfoMsg('We sent a verification code to your email.');
+            } else {
+                await checkAuth();
+                navigate('/studio');
+            }
         } catch (error: any) {
-            setErrorMsg(error.message || "Login failed. Please try again.");
+            setErrorMsg(error.message || 'Login failed. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleVerifyMfa = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!challengeId) return;
+        setSubmitting(true);
+        try {
+            await completeMfaChallenge(challengeId, otp.trim());
+            await checkAuth();
+            navigate('/studio');
+        } catch (error: any) {
+            setErrorMsg(error.message || 'Invalid code. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleMagicLink = async () => {
+        if (!email.trim()) {
+            setErrorMsg('Enter your email first, then request a magic link.');
+            return;
+        }
+        setSubmitting(true);
+        try {
+            await sendMagicUrl(email.trim());
+            setMode('magicSent');
+        } catch (error: any) {
+            setErrorMsg(error.message || 'Could not send a magic link. Please try again.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -79,7 +101,7 @@ export default function Login() {
                             mb: 2
                         }}
                     >
-                        {t('login.welcomeBack')}
+                        {mode === 'mfa' ? 'Verify It’s You' : t('login.welcomeBack')}
                     </Typography>
                     <Typography
                         variant="body1"
@@ -89,47 +111,102 @@ export default function Login() {
                             mb: 6
                         }}
                     >
-                        {t('login.enterDetails')}
+                        {mode === 'mfa'
+                            ? 'Enter the 6-digit code we emailed you.'
+                            : mode === 'magicSent'
+                                ? 'Check your inbox for a sign-in link.'
+                                : t('login.enterDetails')}
                     </Typography>
 
-                    <form onSubmit={handleLogin}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <StyledTextField
-                                fullWidth
-                                label="Email"
-                                type="email"
-                                name="email"
-                                autoComplete="email"
-                                inputMode="email"
-                                spellCheck={false}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <StyledTextField
-                                fullWidth
-                                label="Password"
-                                type="password"
-                                name="password"
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <PrimaryButton type="submit" fullWidth disableRipple sx={{ mt: 2 }}>
-                                {t('login.logIn')}
-                            </PrimaryButton>
+                    {mode === 'magicSent' ? (
+                        <Box>
+                            <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, mb: 4, lineHeight: 1.6 }}>
+                                We sent a magic sign-in link to <strong>{email.trim()}</strong>. Open it on this device
+                                to finish logging in. The link is valid for 1 hour.
+                            </Typography>
+                            <SecondaryButton fullWidth disableRipple onClick={() => setMode('password')}>
+                                Back to login
+                            </SecondaryButton>
                         </Box>
-                    </form>
+                    ) : mode === 'mfa' ? (
+                        <form onSubmit={handleVerifyMfa}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                <StyledTextField
+                                    fullWidth
+                                    label="Verification code"
+                                    type="text"
+                                    name="one-time-code"
+                                    autoComplete="one-time-code"
+                                    inputMode="numeric"
+                                    spellCheck={false}
+                                    autoFocus
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    required
+                                />
+                                <PrimaryButton type="submit" fullWidth disableRipple disabled={submitting} sx={{ mt: 2 }}>
+                                    {submitting ? 'Verifying…' : 'Verify & Continue'}
+                                </PrimaryButton>
+                                <SecondaryButton fullWidth disableRipple onClick={() => { abortPartialSession(); setChallengeId(null); setMode('password'); setOtp(''); }}>
+                                    Cancel
+                                </SecondaryButton>
+                            </Box>
+                        </form>
+                    ) : (
+                        <>
+                            <form onSubmit={handleLogin}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    <StyledTextField
+                                        fullWidth
+                                        label="Email"
+                                        type="email"
+                                        name="email"
+                                        autoComplete="email"
+                                        inputMode="email"
+                                        spellCheck={false}
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                    <StyledTextField
+                                        fullWidth
+                                        label="Password"
+                                        type="password"
+                                        name="password"
+                                        autoComplete="current-password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                    <Box sx={{ textAlign: 'right', mt: -1 }}>
+                                        <Link to="/forgot-password" style={{ color: colors.textSecondary, textDecoration: 'none', fontFamily: typography.ui, fontSize: '13px' }}>
+                                            Forgot password?
+                                        </Link>
+                                    </Box>
+                                    <PrimaryButton type="submit" fullWidth disableRipple disabled={submitting} sx={{ mt: 1 }}>
+                                        {submitting ? 'Signing in…' : t('login.logIn')}
+                                    </PrimaryButton>
+                                </Box>
+                            </form>
 
-                    <Box sx={{ mt: 4, textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{ fontFamily: typography.ui, color: colors.textSecondary }}>
-                            {t('login.noAccount')}{' '}
-                            <Link to="/signup" style={{ color: colors.primary, textDecoration: 'none', fontWeight: 500 }}>
-                                {t('login.signUp')}
-                            </Link>
-                        </Typography>
-                    </Box>
+                            <Box sx={{ mt: 3 }}>
+                                <SecondaryButton fullWidth disableRipple disabled={submitting} onClick={handleMagicLink}>
+                                    Email me a magic link
+                                </SecondaryButton>
+                            </Box>
+                        </>
+                    )}
+
+                    {mode === 'password' && (
+                        <Box sx={{ mt: 4, textAlign: 'center' }}>
+                            <Typography variant="body2" sx={{ fontFamily: typography.ui, color: colors.textSecondary }}>
+                                {t('login.noAccount')}{' '}
+                                <Link to="/signup" style={{ color: colors.primary, textDecoration: 'none', fontWeight: 500 }}>
+                                    {t('login.signUp')}
+                                </Link>
+                            </Typography>
+                        </Box>
+                    )}
 
                     <Box sx={{ mt: 4, textAlign: 'center' }}>
                         <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -164,6 +241,11 @@ export default function Login() {
             <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
                 <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
                     {errorMsg}
+                </Alert>
+            </Snackbar>
+            <Snackbar open={!!infoMsg} autoHideDuration={6000} onClose={() => setInfoMsg(null)}>
+                <Alert onClose={() => setInfoMsg(null)} severity="info" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
+                    {infoMsg}
                 </Alert>
             </Snackbar>
         </Box>

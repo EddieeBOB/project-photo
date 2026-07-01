@@ -1,7 +1,13 @@
 import { account, tablesDB } from "../lib/appwrite";
 import { Query } from "appwrite";
+import { isMfaRequired, abortPartialSession } from "./authService";
 
-export async function handleLogin(username: string, password: string) {
+export interface LoginResult {
+    /** True when a second factor (email OTP) is still required to finish login. */
+    mfaRequired: boolean;
+}
+
+export async function handleLogin(username: string, password: string): Promise<LoginResult> {
     const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
     let email = username;
 
@@ -29,6 +35,11 @@ export async function handleLogin(username: string, password: string) {
         }
     }
 
+    // Clear any lingering session (e.g. a partial session left behind by an
+    // abandoned MFA attempt) so creating a fresh session can't fail with
+    // "session already active".
+    await abortPartialSession();
+
     try {
         await account.createEmailPasswordSession({ email, password });
     } catch (error: any) {
@@ -39,4 +50,10 @@ export async function handleLogin(username: string, password: string) {
         }
         throw new Error("Login failed. Please try again later.");
     }
+
+    // A session now exists, but it may be a partial session pending a second
+    // factor. If so, the caller must complete an MFA challenge before the
+    // session is usable.
+    const mfaRequired = await isMfaRequired();
+    return { mfaRequired };
 }
