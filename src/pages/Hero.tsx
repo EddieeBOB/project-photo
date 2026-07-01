@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
-import { fetchFeaturedArtist, getHeroPhoto } from '../services/photoService';
+import { fetchFeaturedArtist } from '../services/photoService';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
+// Bundled fallback shown until the featured artist loads. Using a local, hashed asset
+// (instead of a remote Appwrite URL) avoids a 404/network round-trip and paints instantly.
+import heroFallback from '../assets/hero.png';
 
 const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 
@@ -102,7 +105,7 @@ export default function Hero() {
                                 }}
                             >
                                 <img
-                                    src={artistData?.imageUrl || getHeroPhoto()}
+                                    src={artistData?.imageUrl || heroFallback}
                                     alt={artistData?.name ? `Featured work by ${artistData.name}` : 'Featured photography'}
                                     width={480}
                                     height={600}
