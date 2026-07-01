@@ -1,0 +1,10 @@
+# Security response headers.
+# NOTE: Appwrite Sites' static adapter may not read this file; if these headers
+# don't appear in production, configure them on the Site in the Appwrite console.
+# Conservative set only — no strict CSP, to avoid breaking Emotion/MUI inline styles.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()

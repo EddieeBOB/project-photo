@@ -11,4 +11,8 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
+  build: {
+    // Emit source maps so production JS stays debuggable and Lighthouse can map minified code.
+    sourcemap: true,
+  },
 })

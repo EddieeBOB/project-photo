@@ -1,9 +1,10 @@
 import { ID, Query, type Models } from 'appwrite';
 import { account, tablesDB, storage } from '../lib/appwrite';
 import { ownerPermissions } from '../lib/permissions';
-import pica from 'pica';
 import type { Gallery, Photo, CarouselPhoto } from '../components/EditableGalleryCarousel';
-import exifr from 'exifr';
+// `pica` (WASM image resizer) and `exifr` are only needed during the upload flow, not on the
+// landing page that also imports from this module. They are imported dynamically inside the
+// functions that use them so they stay out of the initial bundle.
 
 
 const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
@@ -56,6 +57,7 @@ export async function getPhotoMetadata(file: File) {
     };
 
     try {
+        const { default: exifr } = await import('exifr');
         const exifData = await exifr.parse(file);
         if (!exifData) {
             return defaultMetadata;
@@ -121,8 +123,15 @@ export async function getPhotoMetadata(file: File) {
  * @param width - The maximum width in pixels for the resized image
  * @returns A Promise that resolves to the resized Blob
  */
-const resizer = pica({ features: ['js', 'wasm', 'ww'] });
+let resizerPromise: Promise<import('pica').Pica> | null = null;
+async function getResizer() {
+    if (!resizerPromise) {
+        resizerPromise = import('pica').then(({ default: pica }) => pica({ features: ['js', 'wasm', 'ww'] }));
+    }
+    return resizerPromise;
+}
 export async function resizeImage(file: File, width: number): Promise<Blob> {
+    const resizer = await getResizer();
     return new Promise((resolve, reject) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);

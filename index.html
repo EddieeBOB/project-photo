@@ -9,11 +9,17 @@
   <meta name="theme-color" content="#131313" media="(prefers-color-scheme: dark)" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Preconnect to the Appwrite backend so the first API/image request is faster (improves LCP). -->
+  <link rel="preconnect" href="https://tor.cloud.appwrite.io" crossorigin>
+  <!-- Load the font stylesheet without blocking first paint. `display=swap` means text renders
+       immediately in a fallback font and swaps to the web font once it loads. -->
   <link rel="preload" as="style"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap">
-  <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap"
-    rel="stylesheet">
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap">
+  </noscript>
   <script>
     // Set theme before first paint to prevent a flash of the wrong theme (FOUC)
     (function () {

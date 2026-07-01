@@ -71,9 +71,11 @@ export default function Footer() {
                         gap: 4
                     }}
                 >
-                    {/* Brand */}
+                    {/* Brand — rendered as a span (not a heading) to avoid breaking the
+                        page's heading order; it's decorative branding, not a section title. */}
                     <Typography
                         variant="h6"
+                        component="span"
                         sx={{
                             fontFamily: typography.headline,
                             color: colors.text,
