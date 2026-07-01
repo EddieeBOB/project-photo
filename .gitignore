@@ -25,7 +25,14 @@ dist-ssr
 *.env
 *.claude
 *.mcp.json
-*.playwright-mcp
+.playwright-mcp
+
 # Appwrite config (contains project IDs / not for VCS)
 appwrite.config.json
 APPWRITE_SETUP.md
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

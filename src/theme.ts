@@ -1,5 +1,6 @@
 import { styled } from '@mui/material/styles';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 
 export const colors = {
     primary: 'var(--primary)',
@@ -66,5 +67,30 @@ export const SecondaryButton = styled(Button)({
     '&:focus-visible': {
         outline: `2px solid ${colors.text}`,
         outlineOffset: '2px',
+    }
+});
+
+export const StyledTextField = styled(TextField)({
+    '& .MuiOutlinedInput-root': {
+        borderRadius: '0px',
+        fontFamily: typography.ui,
+        backgroundColor: colors.surfaceBright,
+        '& fieldset': {
+            borderColor: colors.borderLight,
+        },
+        '&:hover fieldset': {
+            borderColor: colors.textSecondary,
+        },
+        '&.Mui-focused fieldset': {
+            borderColor: colors.primary,
+            borderWidth: '1px',
+        },
+    },
+    '& .MuiInputLabel-root': {
+        fontFamily: typography.ui,
+        color: colors.textSecondary,
+        '&.Mui-focused': {
+            color: colors.primary,
+        }
     }
 });

@@ -8,6 +8,7 @@ import Hero from './pages/Hero';
 import FeatureCards from './components/FeatureCards';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import VerificationBanner from './components/VerificationBanner';
 
 // Lazy load pages to split code and reduce initial bundle size
 const Login = lazy(() => import('./pages/Login'));
@@ -16,6 +17,11 @@ const Gallery = lazy(() => import('./pages/Gallery'));
 const StudioWorkspace = lazy(() => import('./pages/StudioWorkspace'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const About = lazy(() => import('./pages/About'));
+const Account = lazy(() => import('./pages/Account'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const MagicUrlCallback = lazy(() => import('./pages/MagicUrlCallback'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 const PageLoader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, minHeight: '50vh' }}>
@@ -33,6 +39,12 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/about" element={<About />} />
+
+            {/* Auth flow routes */}
+            <Route path="/verify" element={<VerifyEmail />} />
+            <Route path="/magic" element={<MagicUrlCallback />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset" element={<ResetPassword />} />
             <Route path="/" element={
               <>
                 <Hero />
@@ -46,13 +58,15 @@ function App() {
             {/* Dynamic Public Profile Route */}
             <Route path="/user/:username" element={<PublicProfile />} /> 
 
-            {/* Protected Studio/Management Route */}
+            {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/studio" element={<StudioWorkspace />} /> 
+              <Route path="/studio" element={<StudioWorkspace />} />
+              <Route path="/account" element={<Account />} />
             </Route>
           </Routes>
         </Suspense>
       </Box>
+      <VerificationBanner />
       <Footer />
     </Box>
   );

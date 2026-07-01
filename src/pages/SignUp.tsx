@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,33 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { handleSignUp as handleSignUpService } from '../services/signupService';
 import { useAuth } from '../contexts/AuthContext';
 import { getSignupPhoto } from '../services/photoService';
+import PasswordRequirements from '../components/PasswordRequirements';
+import { isPasswordValid } from '../utils/password';
 
-import { colors, typography, PrimaryButton } from '../theme';
-
-const StyledTextField = styled(TextField)({
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '0px',
-        fontFamily: typography.ui,
-        backgroundColor: colors.surfaceBright,
-        '& fieldset': {
-            borderColor: colors.borderLight,
-        },
-        '&:hover fieldset': {
-            borderColor: colors.textSecondary,
-        },
-        '&.Mui-focused fieldset': {
-            borderColor: colors.primary,
-            borderWidth: '1px',
-        },
-    },
-    '& .MuiInputLabel-root': {
-        fontFamily: typography.ui,
-        color: colors.textSecondary,
-        '&.Mui-focused': {
-            color: colors.primary,
-        }
-    }
-});
+import { colors, typography, PrimaryButton, StyledTextField } from '../theme';
 
 export default function SignUp() {
     const { t } = useTranslation();
@@ -49,6 +24,10 @@ export default function SignUp() {
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isPasswordValid(password)) {
+            setErrorMsg("Password does not meet the requirements.");
+            return;
+        }
         try {
             await handleSignUpService(username.trim(), email.trim(), password);
             await checkAuth(); // Refresh global user state
@@ -151,10 +130,10 @@ export default function SignUp() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 slotProps={{ htmlInput: { minLength: 8 } }}
-                                helperText={password.length > 0 && password.length < 8 ? "Password must be at least 8 characters" : ""}
-                                error={password.length > 0 && password.length < 8}
+                                error={password.length > 0 && !isPasswordValid(password)}
                             />
-                            <PrimaryButton type="submit" fullWidth disableRipple sx={{ mt: 2 }}>
+                            <PasswordRequirements password={password} />
+                            <PrimaryButton type="submit" fullWidth disableRipple disabled={!isPasswordValid(password)} sx={{ mt: 2 }}>
                                 {t('nav.signUp')}
                             </PrimaryButton>
                         </Box>
