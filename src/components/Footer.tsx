@@ -103,9 +103,6 @@ export default function Footer() {
                     <Typography sx={{ fontFamily: typography.ui, fontSize: '11px', color: colors.textSecondary }}>
                         © {new Date().getFullYear()} Frame Collective. All rights reserved.
                     </Typography>
-                    <Typography sx={{ fontFamily: typography.ui, fontSize: '11px', color: colors.textSecondary }}>
-                        {t('footer.designSystem')}
-                    </Typography>
                 </Box>
             </Container>
 

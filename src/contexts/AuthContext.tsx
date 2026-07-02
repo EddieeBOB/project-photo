@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { account, tablesDB } from '../lib/appwrite';
 import type { Models } from 'appwrite';
+import { isAutoLoginAllowed, clearRememberPreference } from '../services/authService';
 
 interface AuthContextType {
     user: Models.User<Models.Preferences> | null;
@@ -19,6 +20,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkAuth = React.useCallback(async () => {
         try {
             const res = await account.get();
+
+            // A persisted session exists, but only resume it if "remember me"
+            // is still within its 30-day window (or we're in the same browser
+            // session). Otherwise end the session and treat the user as logged out.
+            if (!isAutoLoginAllowed()) {
+                clearRememberPreference();
+                try {
+                    await account.deleteSession({ sessionId: 'current' });
+                } catch {
+                    /* session already gone */
+                }
+                setUser(null);
+                setProfile(null);
+                return;
+            }
+
             setUser(res);
 
             try {

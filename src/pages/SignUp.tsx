@@ -6,6 +6,7 @@ import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { handleSignUp as handleSignUpService } from '../services/signupService';
+import { setRememberPreference } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import { getSignupPhoto } from '../services/photoService';
 import PasswordRequirements from '../components/PasswordRequirements';
@@ -30,6 +31,10 @@ export default function SignUp() {
         }
         try {
             await handleSignUpService(username.trim(), email.trim(), password);
+            // New signups are kept for the current browser session (no 30-day
+            // "remember me"); this also marks the session active so the auth
+            // gate in AuthContext doesn't immediately sign them back out.
+            setRememberPreference(false);
             await checkAuth(); // Refresh global user state
             navigate('/studio'); // Redirect to studio workspace
         } catch (error: any) {

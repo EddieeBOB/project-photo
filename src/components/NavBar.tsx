@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
 import { account } from '../lib/appwrite';
+import { clearRememberPreference } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -150,6 +151,7 @@ export default function NavBar() {
     const handleLogout = async () => {
         try {
             await account.deleteSession({ sessionId: 'current' });
+            clearRememberPreference();
             await checkAuth(); // Refresh global auth context state (sets user to null)
             navigate('/');
         } catch (error) {

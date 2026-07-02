@@ -1,11 +1,8 @@
-import { account, tablesDB, ID } from '../lib/appwrite';
+import { account } from '../lib/appwrite';
 import { AuthenticationFactor } from 'appwrite';
-import { ownerPermissions } from '../lib/permissions';
-
-const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 
 /**
- * Centralized auth helpers for email verification, magic-URL login,
+ * Centralized auth helpers for email verification,
  * password recovery, and email-based MFA (2FA).
  *
  * Redirect URLs are built from the current origin. Every hostname used here
@@ -31,56 +28,8 @@ export async function confirmVerification(userId: string, secret: string): Promi
 }
 
 /* ------------------------------------------------------------------ */
-/* Magic URL (passwordless) login                                      */
+/* Session helpers                                                     */
 /* ------------------------------------------------------------------ */
-
-/** Emails a magic login link. Creates the account if the email is new. */
-export async function sendMagicUrl(email: string): Promise<void> {
-    await account.createMagicURLToken({
-        userId: ID.unique(),
-        email,
-        url: `${origin()}/magic`,
-    });
-}
-
-/** Completes magic-URL login using userId + secret from the link. */
-export async function completeMagicUrl(userId: string, secret: string): Promise<void> {
-    // Clear any pre-existing session so creating the new one can't fail with
-    // "session already active" (e.g. when the link is opened while logged in).
-    await abortPartialSession();
-    await account.createSession({ userId, secret });
-    // Magic-URL login can create a brand-new account; make sure it has the
-    // `users` profile row the rest of the app relies on.
-    await ensureUserProfile();
-}
-
-/**
- * Ensures the authenticated user has a `users` table row. Signup creates this
- * row, but magic-URL login can mint a brand-new account without one, leaving
- * the app with a null profile and a dangling gallery->users relationship.
- */
-export async function ensureUserProfile(): Promise<void> {
-    const me = await account.get();
-    try {
-        await tablesDB.getRow({ databaseId, tableId: 'users', rowId: me.$id });
-        return; // Profile already exists.
-    } catch {
-        // No row yet — fall through and create it.
-    }
-    try {
-        await tablesDB.createRow({
-            databaseId,
-            tableId: 'users',
-            rowId: me.$id,
-            // `name` is empty for magic-URL accounts; the email is guaranteed
-            // unique, which keeps the unique username index happy.
-            data: { email: me.email, username: me.name?.trim() || me.email },
-            permissions: ownerPermissions(me.$id, true),
-        });
-    } catch (error) {
-        console.error('Failed to create user profile row:', error);
-    }
-}
 
 /** Best-effort deletion of the current (possibly partial) session. */
 export async function abortPartialSession(): Promise<void> {
@@ -89,6 +38,53 @@ export async function abortPartialSession(): Promise<void> {
     } catch {
         /* no active session — nothing to clear */
     }
+}
+
+/* ------------------------------------------------------------------ */
+/* "Remember me" auto-login gating                                     */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Appwrite persists the session in localStorage, so on its own it would auto-
+ * resume indefinitely. These helpers gate that auto-resume:
+ *   - "Remember me" checked  -> resume for up to 30 days.
+ *   - unchecked              -> resume only within the same browser session
+ *                               (ends when the browser is fully closed).
+ */
+
+const REMEMBER_EXPIRY_KEY = 'auth.rememberExpiry';
+const SESSION_ACTIVE_KEY = 'auth.sessionActive';
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Records the user's "remember me" choice at login time. */
+export function setRememberPreference(remember: boolean): void {
+    if (remember) {
+        localStorage.setItem(REMEMBER_EXPIRY_KEY, String(Date.now() + THIRTY_DAYS_MS));
+    } else {
+        localStorage.removeItem(REMEMBER_EXPIRY_KEY);
+    }
+    // Marks the current browser session as active. sessionStorage is cleared
+    // when the browser/tab is closed, which is how we detect a fresh start.
+    sessionStorage.setItem(SESSION_ACTIVE_KEY, '1');
+}
+
+/** Clears remember-me state (call on logout). */
+export function clearRememberPreference(): void {
+    localStorage.removeItem(REMEMBER_EXPIRY_KEY);
+    sessionStorage.removeItem(SESSION_ACTIVE_KEY);
+}
+
+/**
+ * Whether a persisted Appwrite session is still allowed to auto-resume.
+ * True within the 30-day window when "remember me" was checked, or within the
+ * same browser session otherwise.
+ */
+export function isAutoLoginAllowed(): boolean {
+    const expiryRaw = localStorage.getItem(REMEMBER_EXPIRY_KEY);
+    if (expiryRaw) {
+        return Date.now() < Number(expiryRaw);
+    }
+    return sessionStorage.getItem(SESSION_ACTIVE_KEY) === '1';
 }
 
 /* ------------------------------------------------------------------ */

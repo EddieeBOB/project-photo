@@ -7,9 +7,7 @@ import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
-// Bundled fallback shown until the featured artist loads. Using a local, hashed asset
-// (instead of a remote Appwrite URL) avoids a 404/network round-trip and paints instantly.
-import heroFallback from '../assets/hero.png';
+
 
 const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 
@@ -41,7 +39,15 @@ export default function Hero() {
     }, []);
 
     return (
-        <Box sx={{ pt: { xs: 16, md: 24 }, pb: { xs: 8, md: 16 } }}>
+        <Box
+            sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                pt: { xs: 16, md: 12 },
+                pb: { xs: 8, md: 12 }
+            }}
+        >
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
                 <Box
                     sx={{
@@ -104,18 +110,20 @@ export default function Hero() {
                                     overflow: 'hidden'
                                 }}
                             >
-                                <img
-                                    src={artistData?.imageUrl || heroFallback}
-                                    alt={artistData?.name ? `Featured work by ${artistData.name}` : 'Featured photography'}
-                                    width={480}
-                                    height={600}
-                                    fetchPriority="high"
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover'
-                                    }}
-                                />
+                                {artistData?.imageUrl && (
+                                    <img
+                                        src={artistData.imageUrl}
+                                        alt={artistData.name ? `Featured work by ${artistData.name}` : 'Featured photography'}
+                                        width={480}
+                                        height={600}
+                                        fetchPriority="high"
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover'
+                                        }}
+                                    />
+                                )}
                             </Box>
 
                             {/* Featured Artist Card */}

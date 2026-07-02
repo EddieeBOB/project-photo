@@ -19,7 +19,6 @@ const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const About = lazy(() => import('./pages/About'));
 const Account = lazy(() => import('./pages/Account'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
-const MagicUrlCallback = lazy(() => import('./pages/MagicUrlCallback'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
@@ -42,7 +41,6 @@ function App() {
 
             {/* Auth flow routes */}
             <Route path="/verify" element={<VerifyEmail />} />
-            <Route path="/magic" element={<MagicUrlCallback />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset" element={<ResetPassword />} />
             <Route path="/" element={
