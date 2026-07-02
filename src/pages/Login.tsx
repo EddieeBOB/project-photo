@@ -3,16 +3,18 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { handleLogin as handleLoginService } from '../services/loginService';
-import { startEmailMfaChallenge, completeMfaChallenge, sendMagicUrl, abortPartialSession } from '../services/authService';
+import { startEmailMfaChallenge, completeMfaChallenge, abortPartialSession, setRememberPreference } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import { getLoginPhoto } from '../services/photoService';
 
 import { colors, typography, PrimaryButton, SecondaryButton, StyledTextField } from '../theme';
 
-type Mode = 'password' | 'mfa' | 'magicSent';
+type Mode = 'password' | 'mfa';
 
 export default function Login() {
     const { t } = useTranslation();
@@ -22,6 +24,7 @@ export default function Login() {
     const [otp, setOtp] = useState('');
     const [challengeId, setChallengeId] = useState<string | null>(null);
     const [mode, setMode] = useState<Mode>('password');
+    const [rememberMe, setRememberMe] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [infoMsg, setInfoMsg] = useState<string | null>(null);
@@ -38,6 +41,7 @@ export default function Login() {
                 setMode('mfa');
                 setInfoMsg('We sent a verification code to your email.');
             } else {
+                setRememberPreference(rememberMe);
                 await checkAuth();
                 navigate('/studio');
             }
@@ -54,26 +58,11 @@ export default function Login() {
         setSubmitting(true);
         try {
             await completeMfaChallenge(challengeId, otp.trim());
+            setRememberPreference(rememberMe);
             await checkAuth();
             navigate('/studio');
         } catch (error: any) {
             setErrorMsg(error.message || 'Invalid code. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handleMagicLink = async () => {
-        if (!email.trim()) {
-            setErrorMsg('Enter your email first, then request a magic link.');
-            return;
-        }
-        setSubmitting(true);
-        try {
-            await sendMagicUrl(email.trim());
-            setMode('magicSent');
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Could not send a magic link. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -113,22 +102,10 @@ export default function Login() {
                     >
                         {mode === 'mfa'
                             ? 'Enter the 6-digit code we emailed you.'
-                            : mode === 'magicSent'
-                                ? 'Check your inbox for a sign-in link.'
-                                : t('login.enterDetails')}
+                            : t('login.enterDetails')}
                     </Typography>
 
-                    {mode === 'magicSent' ? (
-                        <Box>
-                            <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, mb: 4, lineHeight: 1.6 }}>
-                                We sent a magic sign-in link to <strong>{email.trim()}</strong>. Open it on this device
-                                to finish logging in. The link is valid for 1 hour.
-                            </Typography>
-                            <SecondaryButton fullWidth disableRipple onClick={() => setMode('password')}>
-                                Back to login
-                            </SecondaryButton>
-                        </Box>
-                    ) : mode === 'mfa' ? (
+                    {mode === 'mfa' ? (
                         <form onSubmit={handleVerifyMfa}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                 <StyledTextField
@@ -178,7 +155,20 @@ export default function Login() {
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
                                     />
-                                    <Box sx={{ textAlign: 'right', mt: -1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: -1 }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={rememberMe}
+                                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                                    disableRipple
+                                                    size="small"
+                                                    sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                                />
+                                            }
+                                            label="Remember me for 30 days"
+                                            sx={{ m: 0, '& .MuiFormControlLabel-label': { fontFamily: typography.ui, fontSize: '13px', color: colors.textSecondary } }}
+                                        />
                                         <Link to="/forgot-password" style={{ color: colors.textSecondary, textDecoration: 'none', fontFamily: typography.ui, fontSize: '13px' }}>
                                             Forgot password?
                                         </Link>
@@ -188,12 +178,6 @@ export default function Login() {
                                     </PrimaryButton>
                                 </Box>
                             </form>
-
-                            <Box sx={{ mt: 3 }}>
-                                <SecondaryButton fullWidth disableRipple disabled={submitting} onClick={handleMagicLink}>
-                                    Email me a magic link
-                                </SecondaryButton>
-                            </Box>
                         </>
                     )}
 
