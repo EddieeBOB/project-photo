@@ -1,0 +1,31 @@
+# Mailpit — SMTP sink + REST API for the automated 2FA E2E pipeline.
+#
+#   docker compose -f tests/e2e/2fa/docker/docker-compose.mailpit.yml up -d
+#
+# Exposes:
+#   :1025  SMTP  — point the local Appwrite mailer here (see appwrite.smtp.env)
+#   :8025  HTTP  — Web UI + REST API (Playwright reads OTPs from /api/v1/*)
+#
+# Kept standalone (not merged into Appwrite's compose) so it runs the same way
+# whether Appwrite is self-hosted here, on a VM, or reached from CI. Appwrite's
+# containers send to it via host.docker.internal:1025.
+services:
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: e2e-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP ingest
+      - "8025:8025" # Web UI + REST API
+    environment:
+      # This is a test sink: accept any auth and any TLS so Appwrite's mailer
+      # connects without credentials or certificates.
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      # Auto-expire so long-lived local stacks don't accumulate messages.
+      MP_MAX_MESSAGES: "500"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

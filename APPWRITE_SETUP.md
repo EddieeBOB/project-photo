@@ -69,29 +69,3 @@ VITE_APPWRITE_PHOTOS_COLLECTION_ID=photos
 ```
 
 `VITE_APPWRITE_PHOTOS_COLLECTION_ID` must match the `photos` table `$id`.
-
-## Known remaining tradeoff: user email exposure
-
-The `users` table needs `read("any")` because:
-
-- logged-out visitors view public profiles at `/user/:username`, and
-- login resolves a username → email before the user is authenticated
-  (`src/services/loginService.ts`).
-
-Appwrite has **no field-level read permissions**, so any client that can read a
-user row can read every column on it — including `email`. The frontend already
-avoids requesting `email` (it selects only `username`), but a hand-crafted API
-call could still read it.
-
-**Recommended hardening (requires a small backend change, not done here):**
-
-1. Move the two public operations behind an **Appwrite Function** that uses a
-   server API key:
-   - `resolveLogin(username) -> email` for login, and
-   - `getPublicProfile(username) -> { username, galleries }`.
-2. Then change the `users` table to `rowSecurity: true` with **owner-only read**
-   (remove `read("any")`), and drop the duplicated `email` column (the email
-   already lives in Appwrite Auth).
-
-Until that function exists, keep `read("any")` on `users` but be aware emails are
-technically readable by a determined caller.

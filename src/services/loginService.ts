@@ -1,6 +1,8 @@
-import { account, tablesDB } from "../lib/appwrite";
-import { Query } from "appwrite";
+import { account, client } from "../lib/appwrite";
+import { Functions } from "appwrite";
 import { isMfaRequired, abortPartialSession } from "./authService";
+
+const functions = new Functions(client);
 
 export interface LoginResult {
     /** True when a second factor (email OTP) is still required to finish login. */
@@ -8,29 +10,29 @@ export interface LoginResult {
 }
 
 export async function handleLogin(username: string, password: string): Promise<LoginResult> {
-    const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
     let email = username;
 
-    // Resolve username to email if the input is not an email format
+    // If the user typed a username (not an email), resolve it to their account
+    // email via the `login-resolver` function. The mapping is deliberately not
+    // queryable from the browser — that would expose every user's email — so the
+    // function verifies the password server-side and returns only the caller's
+    // own email, which we use to open the real session below.
     if (!username.includes('@')) {
         try {
-            const response = await tablesDB.listRows({
-                databaseId,
-                tableId: 'users',
-                queries: [
-                    Query.equal('username', username),
-                    Query.limit(1)
-                ]
+            const execution = await functions.createExecution({
+                functionId: import.meta.env.VITE_APPWRITE_LOGIN_FN_ID,
+                body: JSON.stringify({ username, password }),
             });
-            if (!response.rows || response.rows.length === 0) {
+            const resolved = JSON.parse(execution.responseBody || '{}');
+            if (execution.responseStatusCode !== 200 || !resolved.email) {
                 throw new Error("Invalid username or password.");
             }
-            email = response.rows[0].email;
+            email = resolved.email;
         } catch (error: any) {
             if (error.message === "Invalid username or password.") {
                 throw error;
             }
-            console.error("Failed to resolve email from username:", error);
+            console.error("Username login resolution failed:", error);
             throw new Error("Invalid username or password.");
         }
     }

@@ -1,4 +1,5 @@
 import { account, ID, tablesDB } from "../lib/appwrite";
+import { ownerPermissions } from "../lib/permissions";
 import { sendVerificationEmail } from "./authService";
 
 export async function handleSignUp(username: string, email: string, password: string) {
@@ -31,10 +32,8 @@ export async function handleSignUp(username: string, email: string, password: st
             databaseId,
             tableId: 'users',
             rowId: userId,
-            data: {
-                email,
-                username
-            }
+            data: { username },
+            permissions: ownerPermissions(userId, true)
         });
     } catch (dbError: any) {
         console.error("User document creation failed:", dbError);
@@ -45,7 +44,8 @@ export async function handleSignUp(username: string, email: string, password: st
                 databaseId,
                 tableId: 'users',
                 rowId: userId,
-                data: { email, username }
+                data: { username },
+                permissions: ownerPermissions(userId, true)
             });
         } catch (retryError: any) {
             console.error(

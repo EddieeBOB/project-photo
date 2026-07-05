@@ -36,3 +36,9 @@ APPWRITE_SETUP.md
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# 2FA E2E — local OTP handshake scratch (never commit codes)
+tests/e2e/2fa/.otp/
+
+# Local self-hosted Appwrite stack (installer output; .env holds secret keys)
+/appwrite/

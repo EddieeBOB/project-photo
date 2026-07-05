@@ -135,11 +135,10 @@ export default function Login() {
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                     <StyledTextField
                                         fullWidth
-                                        label="Email"
-                                        type="email"
-                                        name="email"
-                                        autoComplete="email"
-                                        inputMode="email"
+                                        label="Email or username"
+                                        type="text"
+                                        name="identifier"
+                                        autoComplete="username"
                                         spellCheck={false}
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

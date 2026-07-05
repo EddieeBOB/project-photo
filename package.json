@@ -15,7 +15,13 @@
     "test:integration": "vitest run tests/integration",
     "test:all": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:2fa": "playwright test tests/e2e/2fa",
+    "test:e2e:2fa:manual": "E2E_OTP_MODE=manual playwright test tests/e2e/2fa",
+    "test:e2e:2fa:mailpit": "E2E_OTP_MODE=mailpit playwright test -c playwright.e2e.config.ts",
+    "e2e:preflight": "node tests/e2e/2fa/scripts/preflight.mjs",
+    "e2e:mailpit:up": "docker compose -f tests/e2e/2fa/docker/docker-compose.mailpit.yml up -d",
+    "e2e:mailpit:down": "docker compose -f tests/e2e/2fa/docker/docker-compose.mailpit.yml down"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

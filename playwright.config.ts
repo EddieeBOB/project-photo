@@ -13,10 +13,21 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
     testDir: './tests/e2e',
-    // The upload spec creates/deletes real Appwrite resources, so specs must not
-    // race each other against the same fixture account.
+    // The 2FA suite is a separate, self-contained pipeline: it runs against the
+    // LOCAL self-hosted Appwrite + Mailpit stack via its own config
+    // (playwright.e2e.config.ts) and command (`npm run test:e2e:2fa:mailpit`),
+    // which starts the dev server in `--mode e2e`. This generic `test:e2e` starts
+    // the dev server in the default mode (app -> Appwrite Cloud), so running the
+    // 2FA specs here would mismatch (admin creates users locally, app logs in vs
+    // Cloud). Exclude them so each suite runs against the backend it expects.
+    testIgnore: '**/2fa/**',
+    // Parallelise ACROSS files, but keep each file's tests serial (fullyParallel:
+    // false). This matters for the upload spec: its tests share one fixture
+    // account and create/delete real Appwrite resources, so they must not race —
+    // keeping them in a single worker's serial queue preserves that, while the
+    // stateless UI specs (auth-ui, home, navigation, theme) run concurrently.
     fullyParallel: false,
-    workers: 1,
+    workers: process.env.CI ? 2 : 4,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,
     reporter: process.env.CI ? 'line' : 'list',

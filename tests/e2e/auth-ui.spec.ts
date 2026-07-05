@@ -18,19 +18,14 @@ test.describe('Login page', () => {
         // Scope to the form — a "Log In" button also lives in the navbar.
         await expect(page.getByRole('main').getByRole('button', { name: 'Log In' })).toBeVisible();
         await expect(page.getByRole('link', { name: 'Forgot password?' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Email me a magic link' })).toBeVisible();
+        // NOTE: the "Email me a magic link" button was removed from the login page
+        // (MagicUrl flow dropped), so it is intentionally no longer asserted here.
     });
 
     test('the "Sign Up" link goes to the signup page', async ({ page }) => {
         await page.goto('/login');
         await page.getByRole('link', { name: 'Sign Up' }).click();
         await expect(page).toHaveURL(/\/signup$/);
-    });
-
-    test('requesting a magic link without an email shows an error', async ({ page }) => {
-        await page.goto('/login');
-        await page.getByRole('button', { name: 'Email me a magic link' }).click();
-        await expect(page.getByText('Enter your email first, then request a magic link.')).toBeVisible();
     });
 });
 

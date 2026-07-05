@@ -1,0 +1,10 @@
+{
+  "name": "login-resolver",
+  "version": "1.0.0",
+  "description": "Resolves username -> account email server-side (after password verification) so users can log in by username without exposing emails.",
+  "type": "module",
+  "main": "src/main.js",
+  "dependencies": {
+    "node-appwrite": "^17.2.0"
+  }
+}
