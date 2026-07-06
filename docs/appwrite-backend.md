@@ -2,13 +2,13 @@
 
 This project is a frontend-only app that talks directly to Appwrite, so **all
 authorization is enforced by Appwrite**, not by the React code. The
-[`appwrite.config.json`](appwrite.config.json) in this repo captures the intended
+[`appwrite.config.json`](../appwrite.config.json) in this repo captures the intended
 secure configuration for the database tables and storage bucket.
 
 ## How the security model works
 
 The app sets **per-row / per-file permissions at creation time** (see
-`ownerPermissions()` in [`src/services/photoService.ts`](src/services/photoService.ts)):
+`ownerPermissions()` in [`src/services/photoService.ts`](../src/services/photoService.ts)):
 
 - The owner always gets `read` / `update` / `delete`.
 - Public galleries additionally get `read("any")`.

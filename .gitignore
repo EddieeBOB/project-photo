@@ -29,7 +29,6 @@ dist-ssr
 
 # Appwrite config (contains project IDs / not for VCS)
 appwrite.config.json
-APPWRITE_SETUP.md
 
 # Playwright
 /test-results/
