@@ -20,6 +20,7 @@ export interface GalleryCarouselProps {
     disableHeaderPadding?: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared default data colocated with the carousel component
 export const defaultGallery: Gallery & { photos: CarouselPhoto[] } = {
     id: 'default',
     title: 'The Silent Architecture of Light',

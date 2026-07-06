@@ -152,7 +152,7 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
                 canvas.width = targetWidth;
                 canvas.height = height;
 
-                await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as any);
+                await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as Parameters<typeof resizer.resize>[2]);
                 const blob = await resizer.toBlob(canvas, file.type || 'image/jpeg', 0.85);
 
                 resolve(blob);
@@ -244,18 +244,18 @@ export async function createGallery(
         for (const pid of photoIds) {
             try {
                 await tablesDB.deleteRow({ databaseId, tableId: 'photos', rowId: pid });
-            } catch { }
+            } catch { /* best-effort rollback */ }
         }
         // Rollback: Delete any uploaded files from storage
         for (const fid of uploadedFileIds) {
             try {
                 await storage.deleteFile({ bucketId, fileId: fid });
-            } catch { }
+            } catch { /* best-effort rollback */ }
         }
         // Rollback: Delete the gallery row
         try {
             await tablesDB.deleteRow({ databaseId, tableId: 'gallery', rowId: guuid });
-        } catch { }
+        } catch { /* best-effort rollback */ }
 
         throw error;
     }
@@ -375,13 +375,27 @@ export function retrieveImageURL(fileId: string, width: number): string {
     return result.toString();
 }
 
+export interface CarouselGallery {
+    id: string;
+    title: string;
+    userId: string;
+    photos: {
+        id: string;
+        src: string;
+        title: string;
+        description?: string;
+        metadata: { exposure: string; iso: string; lens: string };
+    }[];
+    isPublic: boolean;
+}
+
 export function mapGalleryToCarousel(
-    fetchedGallery: Models.Document & { galleryTitle?: string; photos?: any[]; isPublic?: boolean },
+    fetchedGallery: Models.DefaultRow & { galleryTitle?: string; photos?: Models.DefaultRow[]; isPublic?: boolean },
     userId: string
-): any {
+): CarouselGallery | null {
     if (!fetchedGallery || !fetchedGallery.photos || fetchedGallery.photos.length === 0) return null;
 
-    const mappedPhotos = fetchedGallery.photos.map((photo: any) => ({
+    const mappedPhotos = fetchedGallery.photos.map((photo) => ({
         id: photo.$id,
         src: retrieveImageURL(photo.imageId, 1200),
         title: photo.title || '',
@@ -520,7 +534,7 @@ export async function deletePhoto(photoId: string) {
 export async function deleteGallery(galleryId: string) {
     try {
         // 1. Fetch all photos associated with this gallery
-        const allPhotos: any[] = [];
+        const allPhotos: Models.DefaultRow[] = [];
         let offset = 0;
 
         while (true) {
@@ -541,7 +555,7 @@ export async function deleteGallery(galleryId: string) {
         }
 
         // 2. Delete all files from storage and photo rows in parallel
-        const deletePromises = allPhotos.map(async (photo: any) => {
+        const deletePromises = allPhotos.map(async (photo) => {
             if (photo.imageId) {
                 try {
                     await storage.deleteFile({
@@ -601,7 +615,7 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
 
         // 2. Cascade the same read permissions to every photo row and storage
         // file that belongs to this gallery.
-        const allPhotos: any[] = [];
+        const allPhotos: Models.DefaultRow[] = [];
         let offset = 0;
         while (true) {
             const response = await tablesDB.listRows({
@@ -618,7 +632,7 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
             offset += 100;
         }
 
-        await Promise.all(allPhotos.map(async (photo: any) => {
+        await Promise.all(allPhotos.map(async (photo) => {
             try {
                 await tablesDB.updateRow({
                     databaseId,
@@ -685,7 +699,7 @@ export async function fetchUserGalleryByUsername(username: string) {
         });
 
         const targetUsername = username.trim().toLowerCase();
-        const matchedRow = response.rows.find((row: any) => {
+        const matchedRow = response.rows.find((row) => {
             const dbUsername = (row.username || '').trim().toLowerCase();
             return dbUsername === targetUsername;
         });

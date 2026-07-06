@@ -18,6 +18,7 @@ export default function GalleryPage() {
 
     React.useEffect(() => {
         let isMounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- show the loading state while the async fetch below runs
         setFetching(true);
 
         const loadGalleryData = async () => {
@@ -27,7 +28,7 @@ export default function GalleryPage() {
                     if (!isMounted) return;
 
                     const galleries = fetchedUser?.gallery || [];
-                    const mappedGalleries = galleries.map((fetchedGallery: any) =>
+                    const mappedGalleries = galleries.map((fetchedGallery) =>
                         mapGalleryToCarousel(fetchedGallery, user.$id)
                     ).filter(Boolean);
 
@@ -39,8 +40,8 @@ export default function GalleryPage() {
 
                     if (creatorUser) {
                         const galleries = creatorUser.gallery || [];
-                        const publicGalleries = galleries.filter((g: any) => g.isPublic);
-                        const mappedGalleries = publicGalleries.map((fetchedGallery: any) =>
+                        const publicGalleries = galleries.filter((g) => g.isPublic);
+                        const mappedGalleries = publicGalleries.map((fetchedGallery) =>
                             mapGalleryToCarousel(fetchedGallery, creatorUser.$id)
                         ).filter(Boolean);
 

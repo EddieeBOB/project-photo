@@ -45,7 +45,7 @@ async function emailSessionSecret(email: string, password: string): Promise<stri
         body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-        const data: any = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({})) as { message?: string };
         throw new Error(data?.message || `login failed (${res.status})`);
     }
     const cookie = res.headers.getSetCookie()
@@ -65,8 +65,9 @@ async function emailSessionSecret(email: string, password: string): Promise<stri
 async function expectEmailAccepted(action: () => Promise<unknown>): Promise<void> {
     try {
         await action();
-    } catch (error: any) {
-        const rateLimited = error?.code === 429 || error?.type === 'general_rate_limit_exceeded';
+    } catch (error) {
+        const err = error as { code?: number; type?: string };
+        const rateLimited = err.code === 429 || err.type === 'general_rate_limit_exceeded';
         if (rateLimited) return;
         throw error;
     }

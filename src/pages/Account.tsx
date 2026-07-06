@@ -52,8 +52,8 @@ export default function Account() {
         try {
             await sendVerificationEmail();
             setInfoMsg('Verification email sent. Check your inbox.');
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Could not send the verification email.');
+        } catch (error) {
+            setErrorMsg((error as Error).message || 'Could not send the verification email.');
         } finally {
             setBusy(false);
         }
@@ -65,8 +65,8 @@ export default function Account() {
             await setMfaEnabled(enabled);
             await checkAuth();
             setInfoMsg(enabled ? 'Two-factor authentication enabled.' : 'Two-factor authentication disabled.');
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Could not update two-factor authentication.');
+        } catch (error) {
+            setErrorMsg((error as Error).message || 'Could not update two-factor authentication.');
         } finally {
             setBusy(false);
         }

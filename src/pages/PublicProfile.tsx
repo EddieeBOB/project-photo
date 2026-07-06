@@ -19,6 +19,7 @@ export default function PublicProfile() {
         if (!username) return;
 
         let isMounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reset loading/error state before re-fetching on username change
         setLoading(true);
         setError(false);
 
@@ -38,9 +39,9 @@ export default function PublicProfile() {
 
                 const rawGalleries = fetchedUser.gallery || [];
                 const mappedGalleries = rawGalleries
-                    .map((fetchedGallery: any) => mapGalleryToCarousel(fetchedGallery, fetchedUser.$id))
+                    .map((fetchedGallery) => mapGalleryToCarousel(fetchedGallery, fetchedUser.$id))
                     .filter(Boolean)
-                    .filter((g: any) => g.isPublic === true);
+                    .filter((g) => g.isPublic === true);
 
                 setPublicGalleries(mappedGalleries);
             } catch (err) {

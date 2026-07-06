@@ -39,8 +39,8 @@ export default function ResetPassword() {
         try {
             await confirmPasswordReset(userId, secret, password);
             setDone(true);
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Could not reset your password. The link may have expired.');
+        } catch (error) {
+            setErrorMsg((error as Error).message || 'Could not reset your password. The link may have expired.');
         } finally {
             setSubmitting(false);
         }

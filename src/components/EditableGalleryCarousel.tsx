@@ -223,9 +223,10 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
     }, [items]);
 
     React.useEffect(() => {
+        const blobUrls = blobUrlsRef.current;
         return () => {
-            blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-            blobUrlsRef.current.clear();
+            blobUrls.forEach(url => URL.revokeObjectURL(url));
+            blobUrls.clear();
         };
     }, []);
 
@@ -363,7 +364,7 @@ export default function EditableGalleryCarousel({ onPublishSuccess }: EditableGa
             if (onPublishSuccess) {
                 onPublishSuccess();
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Publish failed:", error);
             setToastMsg({text: "Publish failed. Please try again.", type: 'error'});
         } finally {

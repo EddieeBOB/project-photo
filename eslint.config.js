@@ -19,4 +19,14 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Playwright test files are not React. The `use` fixture callback collides
+    // with the React `use` hook (false-positive rules-of-hooks), and the
+    // dependency-free fixture signature `({}, use)` trips no-empty-pattern.
+    files: ['tests/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'no-empty-pattern': 'off',
+    },
+  },
 ])

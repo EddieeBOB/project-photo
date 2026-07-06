@@ -138,8 +138,8 @@ export async function isMfaRequired(): Promise<boolean> {
     try {
         await account.get();
         return false;
-    } catch (error: any) {
-        if (error?.type === 'user_more_factors_required') {
+    } catch (error) {
+        if ((error as { type?: string }).type === 'user_more_factors_required') {
             return true;
         }
         throw error;

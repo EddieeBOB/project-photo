@@ -45,8 +45,8 @@ export default function Login() {
                 await checkAuth();
                 navigate('/studio');
             }
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Login failed. Please try again.');
+        } catch (error) {
+            setErrorMsg((error as Error).message || 'Login failed. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -61,8 +61,8 @@ export default function Login() {
             setRememberPreference(rememberMe);
             await checkAuth();
             navigate('/studio');
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Invalid code. Please try again.');
+        } catch (error) {
+            setErrorMsg((error as Error).message || 'Invalid code. Please try again.');
         } finally {
             setSubmitting(false);
         }

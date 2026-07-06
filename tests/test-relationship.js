@@ -4,7 +4,7 @@ import { Client, TablesDB, Query, ID, Storage } from 'appwrite';
 const client = new Client()
     .setEndpoint('https://tor.cloud.appwrite.io/v1')
     .setProject('6a09504300328dac3255')
-    .setDevKey('***REVOKED_APPWRITE_DEV_KEY***');
+    .setDevKey(process.env.APPWRITE_DEV_KEY);
 
 const tablesDB = new TablesDB(client);
 

@@ -39,7 +39,7 @@ export default function StudioWorkspace() {
             if (!isMountedRef.current) return;
             const galleries = fetchedUser?.gallery || [];
 
-            const mappedGalleries = galleries.map((fetchedGallery: any) => 
+            const mappedGalleries = galleries.map((fetchedGallery) =>
                 mapGalleryToCarousel(fetchedGallery, user.$id)
             ).filter(Boolean);
 
@@ -55,7 +55,7 @@ export default function StudioWorkspace() {
         try {
             await deleteGallery(galleryId);
             if (isMountedRef.current) setUserGalleries(prev => prev.filter(g => g.id !== galleryId));
-        } catch (error: any) {
+        } catch (error) {
             if (isMountedRef.current) {
                 console.error("Failed to delete gallery:", error);
                 setErrorMsg("Failed to delete gallery. Please try again.");
@@ -71,7 +71,7 @@ export default function StudioWorkspace() {
                     prev.map(g => (g.id === galleryId ? { ...g, isPublic } : g))
                 );
             }
-        } catch (error: any) {
+        } catch (error) {
             if (isMountedRef.current) {
                 console.error("Failed to update gallery visibility:", error);
                 setErrorMsg("Failed to update gallery visibility. Please try again.");
@@ -95,7 +95,7 @@ export default function StudioWorkspace() {
                     })
                 );
             }
-        } catch (error: any) {
+        } catch (error) {
             if (isMountedRef.current) {
                 console.error("Failed to delete photo:", error);
                 setErrorMsg("Failed to delete photo. Please try again.");
@@ -105,6 +105,7 @@ export default function StudioWorkspace() {
 
     React.useEffect(() => {
         if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- load the signed-in user's galleries; clear them on sign-out
             loadGallery();
         } else {
             setUserGalleries([]);

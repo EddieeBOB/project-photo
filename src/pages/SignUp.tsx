@@ -37,8 +37,8 @@ export default function SignUp() {
             setRememberPreference(false);
             await checkAuth(); // Refresh global user state
             navigate('/studio'); // Redirect to studio workspace
-        } catch (error: any) {
-            setErrorMsg(error.message || "Sign up failed. Please try again.");
+        } catch (error) {
+            setErrorMsg((error as Error).message || "Sign up failed. Please try again.");
         }
     };
 

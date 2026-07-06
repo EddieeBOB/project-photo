@@ -21,7 +21,7 @@ import { dirname, resolve } from 'node:path';
  */
 function parseDotEnv(path: string): Record<string, string> {
     const out: Record<string, string> = {};
-    let raw = '';
+    let raw: string;
     try {
         raw = readFileSync(path, 'utf8');
     } catch {

@@ -20,8 +20,8 @@ export default function ForgotPassword() {
         try {
             await sendPasswordReset(email.trim());
             setSent(true);
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Could not send the reset email. Please try again.');
+        } catch (error) {
+            setErrorMsg((error as Error).message || 'Could not send the reset email. Please try again.');
         } finally {
             setSubmitting(false);
         }

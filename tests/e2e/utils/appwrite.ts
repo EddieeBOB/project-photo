@@ -15,7 +15,7 @@ function loadEnv(): Record<string, string> {
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const envPath = resolve(__dirname, '../../../.env');
     const out: Record<string, string> = {};
-    let raw = '';
+    let raw: string;
     try {
         raw = readFileSync(envPath, 'utf8');
     } catch {
@@ -74,7 +74,7 @@ async function emailSessionSecret(email: string, password: string): Promise<stri
         body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-        const data: any = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({})) as { message?: string };
         throw new Error(data?.message || `login failed (${res.status})`);
     }
     const cookie = res.headers
@@ -111,7 +111,7 @@ export async function cleanupGalleriesByTitle(marker: string): Promise<number> {
         const { account, db, storage } = await fixtureSession();
         const me = await account.get();
 
-        const user: any = (await db.listRows({
+        const user = (await db.listRows({
             databaseId: DATABASE!,
             tableId: 'users',
             queries: [
@@ -121,7 +121,7 @@ export async function cleanupGalleriesByTitle(marker: string): Promise<number> {
             ],
         })).rows?.[0];
 
-        const galleries: any[] = user?.gallery || [];
+        const galleries = user?.gallery || [];
         for (const gallery of galleries) {
             const title: string = gallery.galleryTitle || '';
             if (!title.includes(marker)) continue;

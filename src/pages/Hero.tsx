@@ -19,6 +19,7 @@ export default function Hero() {
 
     useEffect(() => {
         let isMounted = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- show loading state while fetching the featured artist
         setLoading(true);
         async function loadFeaturedArtist() {
             try {

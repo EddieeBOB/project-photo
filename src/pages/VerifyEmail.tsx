@@ -8,33 +8,44 @@ import { confirmVerification } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, typography, PrimaryButton } from '../theme';
 
-type Status = 'verifying' | 'success' | 'error';
+type Status = 'idle' | 'verifying' | 'success' | 'error';
 
 export default function VerifyEmail() {
     const [params] = useSearchParams();
     const { user, checkAuth } = useAuth();
-    const [status, setStatus] = React.useState<Status>('verifying');
+    const userId = params.get('userId');
+    const secret = params.get('secret');
+    // Start 'idle' when we have a token so verification waits for an explicit
+    // user click. Automated email link scanners (Gmail prefetch, Outlook/Defender
+    // Safe Links, corporate AV) issue a GET on every link in the email and would
+    // otherwise consume the one-time secret — verifying the account before the
+    // real user ever clicks. A button gates the state-changing call behind a human.
+    const [status, setStatus] = React.useState<Status>(userId && secret ? 'idle' : 'error');
 
-    React.useEffect(() => {
-        const userId = params.get('userId');
-        const secret = params.get('secret');
+    const handleVerify = React.useCallback(async () => {
         if (!userId || !secret) {
             setStatus('error');
             return;
         }
-        let active = true;
-        (async () => {
-            try {
-                await confirmVerification(userId, secret);
-                if (!active) return;
-                await checkAuth();
-                if (active) setStatus('success');
-            } catch {
-                if (active) setStatus('error');
-            }
-        })();
-        return () => { active = false; };
-    }, [params, checkAuth]);
+        setStatus('verifying');
+        try {
+            await confirmVerification(userId, secret);
+            await checkAuth();
+            setStatus('success');
+        } catch {
+            setStatus('error');
+        }
+    }, [userId, secret, checkAuth]);
+
+    if (status === 'idle') {
+        return (
+            <AuthLayout title="Verify your email" subtitle="Click below to confirm your email address.">
+                <PrimaryButton fullWidth disableRipple onClick={handleVerify}>
+                    Verify my email address
+                </PrimaryButton>
+            </AuthLayout>
+        );
+    }
 
     if (status === 'verifying') {
         return (

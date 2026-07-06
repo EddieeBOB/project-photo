@@ -28,12 +28,12 @@ export async function handleLogin(username: string, password: string): Promise<L
                 throw new Error("Invalid username or password.");
             }
             email = resolved.email;
-        } catch (error: any) {
-            if (error.message === "Invalid username or password.") {
+        } catch (error) {
+            if ((error as { message?: string }).message === "Invalid username or password.") {
                 throw error;
             }
             console.error("Username login resolution failed:", error);
-            throw new Error("Invalid username or password.");
+            throw new Error("Invalid username or password.", { cause: error });
         }
     }
 
@@ -44,13 +44,14 @@ export async function handleLogin(username: string, password: string): Promise<L
 
     try {
         await account.createEmailPasswordSession({ email, password });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Login failed:", error);
-        const code = error?.code ?? error?.type;
-        if (code === 401 || error?.type === 'user_invalid_credentials') {
-            throw new Error("Invalid username or password.");
+        const err = error as { code?: number; type?: string };
+        const code = err.code ?? err.type;
+        if (code === 401 || err.type === 'user_invalid_credentials') {
+            throw new Error("Invalid username or password.", { cause: error });
         }
-        throw new Error("Login failed. Please try again later.");
+        throw new Error("Login failed. Please try again later.", { cause: error });
     }
 
     // A session now exists, but it may be a partial session pending a second

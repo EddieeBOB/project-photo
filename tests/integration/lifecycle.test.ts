@@ -61,7 +61,7 @@ async function emailSessionSecret(email: string, password: string): Promise<stri
         body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-        const data: any = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({})) as { message?: string };
         throw new Error(data?.message || `login failed (${res.status})`);
     }
     // The session secret is delivered as the value of the `a_session_<project>`
