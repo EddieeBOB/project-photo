@@ -375,6 +375,12 @@ export function retrieveImageURL(fileId: string, width: number): string {
     return result.toString();
 }
 
+/** A `users` table row with its related `gallery` rows populated. */
+export type UserRow = Models.Row & {
+    username: string;
+    gallery?: (Models.DefaultRow & { galleryTitle?: string; photos?: Models.DefaultRow[]; isPublic?: boolean })[];
+};
+
 export interface CarouselGallery {
     id: string;
     title: string;
@@ -383,7 +389,7 @@ export interface CarouselGallery {
         id: string;
         src: string;
         title: string;
-        description?: string;
+        description: string;
         metadata: { exposure: string; iso: string; lens: string };
     }[];
     isPublic: boolean;
@@ -399,7 +405,7 @@ export function mapGalleryToCarousel(
         id: photo.$id,
         src: retrieveImageURL(photo.imageId, 1200),
         title: photo.title || '',
-        description: photo.description,
+        description: photo.description || '',
         metadata: {
             exposure: photo.exposure || 'N/A',
             iso: photo.iso || 'N/A',
@@ -477,7 +483,7 @@ export async function fetchFeaturedArtist() {
  * @returns A Promise that resolves to the user's Gallery object (which includes a 'photos' array)
  */
 export async function fetchUserGallery(userId: string) {
-    const response = await tablesDB.listRows({
+    const response = await tablesDB.listRows<UserRow>({
         databaseId,
         tableId: 'users',
         queries: [
@@ -675,7 +681,7 @@ export async function fetchUserGalleryByUsername(username: string) {
         const publicUserFields = ['username', 'gallery.*', 'gallery.photos.*'];
 
         // 1. Try exact match first
-        let response = await tablesDB.listRows({
+        let response = await tablesDB.listRows<UserRow>({
             databaseId,
             tableId: 'users',
             queries: [
@@ -689,7 +695,7 @@ export async function fetchUserGalleryByUsername(username: string) {
         }
 
         // 2. Fallback: Search case-insensitively and whitespace-insensitively
-        response = await tablesDB.listRows({
+        response = await tablesDB.listRows<UserRow>({
             databaseId,
             tableId: 'users',
             queries: [

@@ -41,7 +41,7 @@ export default function StudioWorkspace() {
 
             const mappedGalleries = galleries.map((fetchedGallery) =>
                 mapGalleryToCarousel(fetchedGallery, user.$id)
-            ).filter(Boolean);
+            ).filter((g): g is NonNullable<typeof g> => g !== null);
 
             if (isMountedRef.current) setUserGalleries(mappedGalleries);
         } catch (error) {

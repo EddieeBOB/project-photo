@@ -2,10 +2,11 @@ import * as React from 'react';
 import { account, tablesDB } from '../lib/appwrite';
 import type { Models } from 'appwrite';
 import { isAutoLoginAllowed, clearRememberPreference } from '../services/authService';
+import type { UserRow } from '../services/photoService';
 
 interface AuthContextType {
     user: Models.User<Models.Preferences> | null;
-    profile: Models.Row | null;
+    profile: UserRow | null;
     loading: boolean;
     checkAuth: () => Promise<void>;
 }
@@ -15,7 +16,7 @@ export const AuthContext = React.createContext<AuthContextType>({ user: null, pr
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = React.useState<Models.User<Models.Preferences> | null>(null);
-    const [profile, setProfile] = React.useState<Models.Row | null>(null);
+    const [profile, setProfile] = React.useState<UserRow | null>(null);
     const [loading, setLoading] = React.useState(true);
 
     const checkAuth = React.useCallback(async () => {
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             try {
                 const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-                const profileDoc = await tablesDB.getRow({
+                const profileDoc = await tablesDB.getRow<UserRow>({
                     databaseId,
                     tableId: 'users',
                     rowId: res.$id

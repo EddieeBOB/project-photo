@@ -40,7 +40,7 @@ export default function PublicProfile() {
                 const rawGalleries = fetchedUser.gallery || [];
                 const mappedGalleries = rawGalleries
                     .map((fetchedGallery) => mapGalleryToCarousel(fetchedGallery, fetchedUser.$id))
-                    .filter(Boolean)
+                    .filter((g): g is NonNullable<typeof g> => g !== null)
                     .filter((g) => g.isPublic === true);
 
                 setPublicGalleries(mappedGalleries);
