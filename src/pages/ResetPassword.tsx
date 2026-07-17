@@ -19,6 +19,7 @@ export default function ResetPassword() {
     const [confirm, setConfirm] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [done, setDone] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const linkValid = Boolean(userId && secret);
@@ -28,13 +29,14 @@ export default function ResetPassword() {
         e.preventDefault();
         if (!userId || !secret) return;
         if (!isPasswordValid(password)) {
-            setErrorMsg('Password does not meet the requirements.');
+            setValidationError('Password does not meet the requirements.');
             return;
         }
         if (password !== confirm) {
-            setErrorMsg('Passwords do not match.');
+            setValidationError('Passwords do not match.');
             return;
         }
+        setValidationError(null);
         setSubmitting(true);
         try {
             await confirmPasswordReset(userId, secret, password);
@@ -95,7 +97,12 @@ export default function ResetPassword() {
                         helperText={mismatch ? 'Passwords do not match' : ''}
                         error={mismatch}
                     />
-                    <PrimaryButton type="submit" fullWidth disableRipple disabled={submitting || !isPasswordValid(password) || password !== confirm} sx={{ mt: 1 }}>
+                    {validationError && (
+                        <Alert severity="error" sx={{ borderRadius: '0px', fontFamily: 'Inter, sans-serif' }}>
+                            {validationError}
+                        </Alert>
+                    )}
+                    <PrimaryButton type="submit" fullWidth disableRipple disabled={submitting} sx={{ mt: 1 }}>
                         {submitting ? 'Updating…' : 'Update Password'}
                     </PrimaryButton>
                     <SecondaryButton fullWidth disableRipple {...({ component: Link, to: '/login' } as object)}>

@@ -20,15 +20,17 @@ export default function SignUp() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [validationError, setValidationError] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const { checkAuth } = useAuth();
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isPasswordValid(password)) {
-            setErrorMsg("Password does not meet the requirements.");
+            setValidationError("Password does not meet the requirements.");
             return;
         }
+        setValidationError(null);
         try {
             await handleSignUpService(username.trim(), email.trim(), password);
             // New signups are kept for the current browser session (no 30-day
@@ -43,7 +45,7 @@ export default function SignUp() {
     };
 
     return (
-        <Box sx={{ display: 'flex', flexGrow: 1, backgroundColor: colors.surface }}>
+        <Box sx={{ display: 'flex', flexGrow: 1, backgroundColor: colors.surface, height: '100vh'}}>
             {/* Left side: Image */}
             <Box sx={{
                 flex: 1,
@@ -138,7 +140,12 @@ export default function SignUp() {
                                 error={password.length > 0 && !isPasswordValid(password)}
                             />
                             <PasswordRequirements password={password} />
-                            <PrimaryButton type="submit" fullWidth disableRipple disabled={!isPasswordValid(password)} sx={{ mt: 2 }}>
+                            {validationError && (
+                                <Alert severity="error" sx={{ borderRadius: '0px', fontFamily: typography.ui }}>
+                                    {validationError}
+                                </Alert>
+                            )}
+                            <PrimaryButton type="submit" fullWidth disableRipple sx={{ mt: 2 }}>
                                 {t('nav.signUp')}
                             </PrimaryButton>
                         </Box>

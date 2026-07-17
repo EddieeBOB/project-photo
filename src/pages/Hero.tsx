@@ -101,7 +101,6 @@ export default function Hero() {
                             <Box
                                 sx={{
                                     width: '100%',
-                                    aspectRatio: '4/5',
                                     backgroundColor: colors.borderLight,
                                     position: 'relative',
                                     display: 'flex',
@@ -115,8 +114,6 @@ export default function Hero() {
                                     <img
                                         src={artistData.imageUrl}
                                         alt={artistData.name ? `Featured work by ${artistData.name}` : 'Featured photography'}
-                                        width={480}
-                                        height={600}
                                         fetchPriority="high"
                                         style={{
                                             width: '100%',
