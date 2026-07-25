@@ -9,6 +9,9 @@ their creative workspace — with all authorization enforced server-side by
 Appwrite.
 
 ---
+### UI/UX Design 
+
+> !!! The UI/UX is inspried and created by Goggle Sticth. I am neither artistcally gifted nor do I see anything wrong with a html webpage.
 
 > ### ⚠️ This is a DEMO app — not for production use
 > Use it at your own risk. I am not responsible for any data loss or security
@@ -237,15 +240,6 @@ All project docs live in **[docs/](./docs/README.md)**:
 
 ## Roadmap
 
-Completed:
-- [x] Fix favicon
-- [x] Fix login submit form
-- [x] Username-only accounts (drop first/last name)
-- [x] Dark mode
-- [x] Email-OTP two-factor authentication
-- [x] Login by username (server-side resolver)
-- [x] Unit, integration, and E2E test suites
-
 Planned:
 - [ ] **Journal page** — a rich-text editorial space for articles and
   behind-the-scenes stories alongside high-resolution visuals.
@@ -259,3 +253,5 @@ Planned:
 ## License
 
 Demo / educational project. Use at your own risk.
+
+
