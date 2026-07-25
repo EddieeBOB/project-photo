@@ -11,7 +11,7 @@ Appwrite.
 ---
 ### UI/UX Design 
 
-> !!! The UI/UX is inspried and created by Goggle Sticth. I am neither artistcally gifted nor do I see anything wrong with a html webpage.
+> !!! The UI/UX is inspired and created by Goggle Sticth. I am neither artistcally gifted nor do I see anything wrong with a html webpage.
 
 > ### ⚠️ This is a DEMO app — not for production use
 > Use it at your own risk. I am not responsible for any data loss or security
