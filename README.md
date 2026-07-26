@@ -1,11 +1,11 @@
-# Frame — A Home for Every Lens
+# Frame - A Home for Every Lens
 
 **Live:** [photoframes.me](https://photoframes.me)
 
 Frame is a photography-focused web platform built for minimalism and
 high-fidelity visual storytelling. It gives photographers a clean,
 distraction-free space to showcase portfolios, curate galleries, and manage
-their creative workspace — with all authorization enforced server-side by
+their creative workspace - with all authorization enforced server-side by
 Appwrite.
 
 ---
@@ -13,7 +13,7 @@ Appwrite.
 
 > !!! The UI/UX is inspired and created by Goggle Sticth. I am neither artistcally gifted nor do I see anything wrong with a html webpage.
 
-> ### ⚠️ This is a DEMO app — not for production use
+> ### ⚠️ This is a DEMO app - not for production use
 > Use it at your own risk. I am not responsible for any data loss or security
 > breaches. Security measures are implemented on Appwrite; see
 > [docs/appwrite-backend.md](./docs/appwrite-backend.md).
@@ -27,11 +27,11 @@ Minimalist editorial landing page with expressive typography and a featured-arti
 ![Home Page](./public/assets/screenshot_home.png)
 
 ### Gallery Page
-The core visual experience — high-quality photography with inline EXIF metadata (exposure, ISO, lens), organized into curated exhibitions.
+The core visual experience - high-quality photography with inline EXIF metadata (exposure, ISO, lens), organized into curated exhibitions.
 ![Gallery Page](./public/assets/screenshot_gallery.png)
 
 ### Dark Mode
-The full interface adapts to a persisted light/dark theme — here, the gallery at night.
+The full interface adapts to a persisted light/dark theme - here, the gallery at night.
 ![Dark Mode Gallery](./public/assets/screenshot_gallery_dark.png)
 
 ### Public Profile
@@ -59,38 +59,38 @@ Fully responsive down to mobile, with a slide-out navigation drawer.
 ## Features
 
 ### Experience
-- **"Luminous Editorial" design system** — elegant serif/sans pairing
+- **"Luminous Editorial" design system** - elegant serif/sans pairing
   (`Playfair Display` + `Inter`), generous whitespace, thin borders, and
   glassmorphism accents. Documented in
   [docs/design/luminous-editorial.md](./docs/design/luminous-editorial.md).
-- **Dark mode** — theme toggle backed by `ThemeContext`, persisted to
+- **Dark mode** - theme toggle backed by `ThemeContext`, persisted to
   `localStorage` and applied via a `data-theme` attribute.
-- **Internationalization** — UI strings run through `i18next` / `react-i18next`
+- **Internationalization** - UI strings run through `i18next` / `react-i18next`
   (`src/i18n.ts`).
-- **Fully responsive** — optimized from mobile through 4K desktop, including a
+- **Fully responsive** - optimized from mobile through 4K desktop, including a
   responsive mobile navigation drawer.
-- **Error boundaries** — an `ErrorBoundary` overlay catches render/network
+- **Error boundaries** - an `ErrorBoundary` overlay catches render/network
   failures gracefully.
 
 ### Portfolio & Studio
-- **Public gallery** (`/gallery`) — a horizontal carousel showcasing published
+- **Public gallery** (`/gallery`) - a horizontal carousel showcasing published
   portfolios.
-- **Public profiles** (`/user/:username`) — per-photographer pages resolved by
+- **Public profiles** (`/user/:username`) - per-photographer pages resolved by
   username.
-- **Studio workspace** (`/studio`, protected) — drag-and-drop upload, title,
+- **Studio workspace** (`/studio`, protected) - drag-and-drop upload, title,
   describe, and publish galleries directly.
-- **Client-side image pipeline** — uploads are resized with
+- **Client-side image pipeline** - uploads are resized with
   [`pica`](https://github.com/nodeca/pica) and their EXIF metadata is read with
   [`exifr`](https://github.com/MikeKovarik/exifr) before storage.
 
 ### Authentication & security
 - **Email/password auth** with email verification and password reset flows.
-- **Login by username** — a server-side [`login-resolver`](./functions/login-resolver/README.md)
+- **Login by username** - a server-side [`login-resolver`](./functions/login-resolver/README.md)
   Appwrite Function resolves username → email *after* verifying the password, so
   no one's email is ever exposed to the browser.
-- **Two-factor authentication** — email-OTP 2FA (a 6-digit code emailed at
+- **Two-factor authentication** - email-OTP 2FA (a 6-digit code emailed at
   login), enrolled and challenged through Appwrite MFA.
-- **Row/file-level authorization** — private galleries stay private and public
+- **Row/file-level authorization** - private galleries stay private and public
   ones are readable by anyone, enforced by Appwrite permissions rather than
   client code (closes IDOR / "private is actually public" gaps). See
   [docs/appwrite-backend.md](./docs/appwrite-backend.md).
@@ -114,7 +114,7 @@ Fully responsive down to mobile, with a slide-out navigation drawer.
 
 ## Architecture
 
-Frame is a **frontend-only SPA that talks directly to Appwrite** — there is no
+Frame is a **frontend-only SPA that talks directly to Appwrite** - there is no
 custom app server. The only server-side code is a single Appwrite Function
 (`login-resolver`). Because the browser calls Appwrite directly, **all access
 control lives in Appwrite's row/file permissions**, not in the React code.
@@ -169,7 +169,7 @@ npm install
 
 ### 2. Configure environment
 Create a `.env` in the project root. **These are all non-secret public
-identifiers — never put an API key in a `VITE_` variable.**
+identifiers - never put an API key in a `VITE_` variable.**
 
 ```env
 VITE_APPWRITE_ENDPOINT="https://<REGION>.cloud.appwrite.io/v1"
@@ -211,19 +211,19 @@ npm run dev      # http://localhost:5173
 
 ## Testing
 
-Three layers — full details in [tests/README.md](./tests/README.md):
+Three layers - full details in [tests/README.md](./tests/README.md):
 
-- **Unit** ([Vitest](https://vitest.dev/)) — offline, deterministic coverage of
+- **Unit** ([Vitest](https://vitest.dev/)) - offline, deterministic coverage of
   the security-critical pure logic (password rules, the per-document permission
   builder).
-- **Integration** (Vitest) — live client-side tests against the real Appwrite
+- **Integration** (Vitest) - live client-side tests against the real Appwrite
   project: auth email flows and a full gallery/photo/file lifecycle (create →
   guest-can't-read → owner-can → publish → delete).
-- **E2E** ([Playwright](https://playwright.dev/)) — real-browser coverage of
+- **E2E** ([Playwright](https://playwright.dev/)) - real-browser coverage of
   public pages, navigation, theme toggle, auth UI, and the full upload pipeline.
   The **[2FA lifecycle suite](./tests/e2e/2fa/README.md)** runs email-OTP login
   end-to-end against a local Appwrite + [Mailpit](./tests/e2e/2fa/docker/README.md)
-  stack, reading the OTP back over Mailpit's API — fully automated, no human.
+  stack, reading the OTP back over Mailpit's API - fully automated, no human.
 
 ---
 
@@ -234,18 +234,18 @@ All project docs live in **[docs/](./docs/README.md)**:
 - [Appwrite backend & security model](./docs/appwrite-backend.md)
 - [`login-resolver` function](./functions/login-resolver/README.md)
 - [Testing overview](./tests/README.md) · [2FA E2E](./tests/e2e/2fa/README.md) · [Local Mailpit stack](./tests/e2e/2fa/docker/README.md)
-- [Design system — Luminous Editorial](./docs/design/luminous-editorial.md) · [Auth patterns](./docs/design/auth-patterns.md)
+- [Design system - Luminous Editorial](./docs/design/luminous-editorial.md) · [Auth patterns](./docs/design/auth-patterns.md)
 
 ---
 
 ## Roadmap
 
 Planned:
-- [ ] **Journal page** — a rich-text editorial space for articles and
+- [ ] **Journal page** - a rich-text editorial space for articles and
   behind-the-scenes stories alongside high-resolution visuals.
-- [ ] **Dynamic front page** — replace static templates with active/trending
+- [ ] **Dynamic front page** - replace static templates with active/trending
   galleries and a rotating "Artist of the Week" spotlight.
-- [ ] **Hardening & optimization** — broader error boundaries, on-the-fly
+- [ ] **Hardening & optimization** - broader error boundaries, on-the-fly
   WebP/AVIF conversion, and lazy-loading of offscreen images.
 
 ---
