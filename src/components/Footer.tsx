@@ -98,12 +98,6 @@ export default function Footer() {
                         <SocialIcon />
                     </Box>
                 </Box>
-
-                <Box sx={{ mt: 3, pt: 4, borderTop: `1px solid ${colors.borderLight}`, display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontFamily: typography.ui, fontSize: '11px', color: colors.textSecondary }}>
-                        © {new Date().getFullYear()} Frame Collective. All rights reserved.
-                    </Typography>
-                </Box>
             </Container>
 
             <Dialog

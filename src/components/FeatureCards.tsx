@@ -107,7 +107,7 @@ export default function FeatureCards() {
                                 lineHeight: 1.2
                             }}
                         >
-                            Democratizing the Art of Seeing
+                            A website built for photographers to only see photos.
                         </Typography>
                         <Typography
                             variant="body1"

@@ -13,7 +13,7 @@ export default function About() {
                 sx={{
                     position: 'relative',
                     width: '100%',
-                    height: '60vh',
+                    height: '80vh',
                     minHeight: '400px',
                     display: 'flex',
                     alignItems: 'center',
@@ -47,55 +47,10 @@ export default function About() {
                             lineHeight: 1.6,
                         }}
                     >
-                        We believe in the power of intentional curation. Frame Collective is a sanctuary for visual craft, where every image is given the space to speak.
+                        I believe in the power of intentional curation. Sites like, Instagram, have made it easy to share photos, but they have also made it easy to get lost in the noise. Frame is a place for photographers to showcase their work without distractions, and for viewers to appreciate photography without the clutter of social media.
                     </Typography>
                 </Container>
             </Box>
-
-            {/* Mission Section */}
-            <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, py: { xs: 8, md: 12 } }}>
-                <Grid container spacing={{ xs: 4, md: 6 }}>
-                    <Grid size={{ xs: 12, md: 5 }} sx={{ borderTop: `1px solid ${colors.borderLight}`, pt: 3 }}>
-                        <Typography
-                            variant="h2"
-                            sx={{
-                                fontFamily: typography.headline,
-                                fontSize: { xs: '28px', md: '36px' },
-                                fontWeight: 400,
-                                color: colors.text,
-                                mb: 2,
-                            }}
-                        >
-                            Democratizing the Art of Seeing
-                        </Typography>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 7 }} sx={{ borderTop: `1px solid ${colors.borderLight}`, pt: 3 }}>
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                fontFamily: typography.ui,
-                                fontSize: '16px',
-                                color: colors.textSecondary,
-                                lineHeight: 1.7,
-                                mb: 3,
-                            }}
-                        >
-                            Our mission extends beyond simply hosting images. We aim to foster a community defined not by exclusivity, but by an unwavering commitment to quality and craft. In an era of endless scrolling, we champion the deliberate act of looking.
-                        </Typography>
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                fontFamily: typography.ui,
-                                fontSize: '16px',
-                                color: colors.textSecondary,
-                                lineHeight: 1.7,
-                            }}
-                        >
-                            By providing an editorial-grade platform, we empower photographers to present their work with the fidelity it deserves, elevating the discourse around contemporary photography.
-                        </Typography>
-                    </Grid>
-                </Grid>
-            </Container>
         </Box>
     );
 }

@@ -136,7 +136,7 @@ export default function GalleryPage() {
                             pb: 3
                         }}
                     >
-                        The Creator's Gallery
+                        My Gallery
                     </Typography>
                 </Container>
             )}
