@@ -57,21 +57,6 @@ Fully responsive down to mobile, with a slide-out navigation drawer.
 ---
 
 ## Features
-
-### Experience
-- **"Luminous Editorial" design system** - elegant serif/sans pairing
-  (`Playfair Display` + `Inter`), generous whitespace, thin borders, and
-  glassmorphism accents. Documented in
-  [docs/design/luminous-editorial.md](./docs/design/luminous-editorial.md).
-- **Dark mode** - theme toggle backed by `ThemeContext`, persisted to
-  `localStorage` and applied via a `data-theme` attribute.
-- **Internationalization** - UI strings run through `i18next` / `react-i18next`
-  (`src/i18n.ts`).
-- **Fully responsive** - optimized from mobile through 4K desktop, including a
-  responsive mobile navigation drawer.
-- **Error boundaries** - an `ErrorBoundary` overlay catches render/network
-  failures gracefully.
-
 ### Portfolio & Studio
 - **Public gallery** (`/gallery`) - a horizontal carousel showcasing published
   portfolios.
@@ -152,46 +137,6 @@ project-photo/
 
 ---
 
-## Getting Started
-
-### Prerequisites
-- Node.js **v18+** (developed on v26)
-- npm
-- An Appwrite project (Cloud or self-hosted) with the tables/bucket from
-  [`appwrite.config.json`](./appwrite.config.json)
-
-### 1. Install
-```bash
-git clone <repository-url>
-cd project-photo
-npm install
-```
-
-### 2. Configure environment
-Create a `.env` in the project root. **These are all non-secret public
-identifiers - never put an API key in a `VITE_` variable.**
-
-```env
-VITE_APPWRITE_ENDPOINT="https://<REGION>.cloud.appwrite.io/v1"
-VITE_APPWRITE_PROJECT_ID="<PROJECT_ID>"
-VITE_APPWRITE_PROJECT_NAME="project-photo"
-VITE_APPWRITE_DATABASE_ID="<DATABASE_ID>"
-VITE_APPWRITE_ARTISTS_COLLECTION_ID="users"
-VITE_APPWRITE_PHOTOS_COLLECTION_ID="photos"
-VITE_APPWRITE_BUCKET_ID="<BUCKET_ID>"
-VITE_APPWRITE_LOGIN_FN_ID="login-resolver"
-```
-
-See [docs/appwrite-backend.md](./docs/appwrite-backend.md) for how to deploy the
-backend config and why the permission model is set up the way it is.
-
-### 3. Run
-```bash
-npm run dev      # http://localhost:5173
-```
-
----
-
 ## Scripts
 
 | Script | Description |
@@ -241,14 +186,8 @@ All project docs live in **[docs/](./docs/README.md)**:
 ## Roadmap
 
 Planned:
-- [ ] **Journal page** - a rich-text editorial space for articles and
-  behind-the-scenes stories alongside high-resolution visuals.
-- [ ] **Dynamic front page** - replace static templates with active/trending
-  galleries and a rotating "Artist of the Week" spotlight.
-- [ ] **Hardening & optimization** - broader error boundaries, on-the-fly
-  WebP/AVIF conversion, and lazy-loading of offscreen images.
-
----
+- [ ] thumhash pre-rendering for photos
+- [ ] new gallery page from [suped-project-photo](https://github.com/EddieeBOB/suped-project-photo)
 
 ## License
 
