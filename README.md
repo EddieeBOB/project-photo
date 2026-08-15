@@ -9,14 +9,9 @@ their creative workspace - with all authorization enforced server-side by
 Appwrite.
 
 ---
-### UI/UX Design 
+### UI/UX Design
 
 > !!! The UI/UX is inspired and created by Goggle Sticth. I am neither artistcally gifted nor do I see anything wrong with a html webpage.
-
-> ### ⚠️ This is a DEMO app - not for production use
-> Use it at your own risk. I am not responsible for any data loss or security
-> breaches. Security measures are implemented on Appwrite; see
-> [docs/appwrite-backend.md](./docs/appwrite-backend.md).
 
 ---
 
@@ -109,7 +104,7 @@ project-photo/
 ├── src/
 │   ├── pages/          # Route screens (Hero, Gallery, StudioWorkspace, Login, …)
 │   ├── components/     # NavBar, carousels, ProtectedRoute, ErrorBoundary, …
-│   ├── services/       # authService, loginService, signupService, photoService
+│   ├── services/       # authService, loginService, signupService, galleryService, userService
 │   ├── contexts/       # AuthContext, ThemeContext
 │   ├── lib/            # appwrite client + permissions helpers
 │   ├── utils/          # password strength, misc
@@ -118,7 +113,6 @@ project-photo/
 │   └── login-resolver/ # Appwrite Function: username → email (server-side)
 ├── tests/              # unit + integration (Vitest), e2e + 2FA (Playwright)
 ├── docs/               # project documentation (see docs/README.md)
-├── appwrite.config.json # Appwrite tables/bucket/function config
 └── public/             # static assets, _headers, robots.txt
 ```
 
@@ -167,8 +161,8 @@ Three layers - full details in [tests/README.md](./tests/README.md):
 - **E2E** ([Playwright](https://playwright.dev/)) - real-browser coverage of
   public pages, navigation, theme toggle, auth UI, and the full upload pipeline.
   The **[2FA lifecycle suite](./tests/e2e/2fa/README.md)** runs email-OTP login
-  end-to-end against a local Appwrite + [Mailpit](./tests/e2e/2fa/docker/README.md)
-  stack, reading the OTP back over Mailpit's API - fully automated, no human.
+  end-to-end against a local Appwrite + Mailpit stack, reading the OTP back over
+  Mailpit's API - fully automated, no human.
 
 ---
 
@@ -178,7 +172,7 @@ All project docs live in **[docs/](./docs/README.md)**:
 
 - [Appwrite backend & security model](./docs/appwrite-backend.md)
 - [`login-resolver` function](./functions/login-resolver/README.md)
-- [Testing overview](./tests/README.md) · [2FA E2E](./tests/e2e/2fa/README.md) · [Local Mailpit stack](./tests/e2e/2fa/docker/README.md)
+- [Testing overview](./tests/README.md) · [2FA E2E](./tests/e2e/2fa/README.md)
 - [Design system - Luminous Editorial](./docs/design/luminous-editorial.md) · [Auth patterns](./docs/design/auth-patterns.md)
 
 ---
@@ -186,11 +180,6 @@ All project docs live in **[docs/](./docs/README.md)**:
 ## Roadmap
 
 Planned:
-- [ ] thumhash pre-rendering for photos
+- [x] thumbhash pre-rendering for photos
 - [ ] new gallery page from [suped-project-photo](https://github.com/EddieeBOB/suped-project-photo)
-
-## License
-
-Demo / educational project. Use at your own risk.
-
 

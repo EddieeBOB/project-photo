@@ -3,6 +3,7 @@ import { ID, Query, type Models } from 'appwrite';
 import { account, tablesDB, storage } from '../lib/appwrite';
 import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId } from '../lib/config';
 import { ownerPermissions } from '../lib/permissions';
+import { fileToThumbhash } from '../lib/thumbhash';
 import type { Gallery, Photo } from '../types/gallery';
 import { ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_BYTES, UPLOAD_MAX_WIDTH, resizeImage } from './imageProcessing';
 import { retrieveImageURL } from './imageUrls';
@@ -79,20 +80,28 @@ async function createImage(
     const imageId = await uploadImage(photo.file, ownerId, isPublic);
 
     try {
+        // Hashed from the original rather than the upload: ThumbHash works from a
+        // 100px copy either way, so there is nothing to gain by waiting on the resize.
+        const thumbhash = await fileToThumbhash(photo.file);
+
+        const data = {
+            title: photo.title,
+            description: photo.description,
+            exposure: photo.metadata.exposure,
+            iso: photo.metadata.iso,
+            lens: photo.metadata.lens,
+            isFrontPage: false,
+            imageId,
+            gallery: galleryId,
+        };
+
         await tablesDB.createRow({
             databaseId,
             tableId: PHOTOS_TABLE,
             rowId: photoRowId,
-            data: {
-                title: photo.title,
-                description: photo.description,
-                exposure: photo.metadata.exposure,
-                iso: photo.metadata.iso,
-                lens: photo.metadata.lens,
-                isFrontPage: false,
-                imageId,
-                gallery: galleryId,
-            },
+            // `thumbhash` is optional in the schema, so omitting it on the rare
+            // occasions hashing fails leaves the row perfectly valid.
+            data: thumbhash ? { ...data, thumbhash } : data,
             permissions: ownerPermissions(ownerId, isPublic),
         });
 
@@ -337,6 +346,7 @@ export interface CarouselGallery {
         title: string;
         description: string;
         metadata: { exposure: string; iso: string; lens: string };
+        thumbhash?: string;
     }[];
     isPublic: boolean;
 }
@@ -367,6 +377,9 @@ export function mapGalleryToCarousel(fetchedGallery: FetchedGallery, userId: str
             src: retrieveImageURL(photo.imageId, 1200),
             title: photo.title || '',
             description: photo.description || '',
+            // Null for photos uploaded before the column existed; the carousel
+            // falls back to a plain image.
+            thumbhash: photo.thumbhash || undefined,
             metadata: {
                 exposure: photo.exposure || 'N/A',
                 iso: photo.iso || 'N/A',
@@ -380,8 +393,8 @@ export function mapGalleryToCarousel(fetchedGallery: FetchedGallery, userId: str
  * Loads the photo flagged `isFrontPage` for the landing page, along with the
  * name of the photographer who took it.
  *
- * @returns the artist's name, the quoted photo title, and a preview URL, or
- *          `null` if nothing is featured or the lookup fails
+ * @returns the artist's name, the quoted photo title, a preview URL and its
+ *          placeholder hash, or `null` if nothing is featured or the lookup fails
  */
 export async function fetchFeaturedArtist() {
     try {
@@ -408,6 +421,7 @@ export async function fetchFeaturedArtist() {
             name: row.gallery?.users?.username || 'Anonymous Artist',
             title: `"${row.title ?? 'Untitled'}"`,
             imageUrl: retrieveImageURL(row.imageId, 500),
+            thumbhash: row.thumbhash || undefined,
         };
     } catch (error) {
         console.error('Failed to fetch featured artist:', error);

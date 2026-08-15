@@ -16,6 +16,12 @@ export interface Photo {
         iso: string;
         lens: string;
     };
+    /**
+     * Base64 ThumbHash of the photograph, used to paint a placeholder before
+     * the image itself arrives. Absent on photos uploaded before the column
+     * existed, and on the rare occasion hashing failed.
+     */
+    thumbhash?: string;
     /** Present only for a photo picked in the browser but not yet uploaded. */
     file?: File;
 }

@@ -23,37 +23,41 @@ email/password flow, so **MFA and session persistence are unchanged**.
 
 ## Dynamic key scopes
 
-Declared in `appwrite.config.json` (`functions[].scopes`): `documents.read`,
-`users.read`, `sessions.write`. Appwrite injects a per-execution key as the
-`x-appwrite-key` header — no manual key management.
+The function runs with `documents.read`, `users.read`, and `sessions.write`.
+Appwrite injects a per-execution key as the `x-appwrite-key` header, so there is
+no long-lived key to store or rotate.
 
-## Config / env
+## Environment
 
-`APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID` are provided
-by Appwrite automatically. `APPWRITE_DATABASE_ID` / `APPWRITE_USERS_TABLE_ID`
-are optional overrides (the code falls back to the real IDs).
+`APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID` are supplied
+by the Appwrite runtime. `APPWRITE_DATABASE_ID` and `APPWRITE_USERS_TABLE_ID`
+are optional overrides; the code falls back to the real ids.
 
-## Deploy
+## How it resolves
 
-From the repo root, with the Appwrite CLI logged in:
+1. Look up the username in the `users` table → user id (the row `$id` *is* the
+   Auth user id).
+2. Read the account's email from Auth. It is deliberately not in the table.
+3. Verify the password by creating a throwaway session with the admin key, then
+   deleting it immediately. There is no standalone "verify password" endpoint,
+   so a session that creates successfully is the check. Deleting it keeps the
+   attempt off the user's session limit; the browser opens the real one.
+4. Return the email.
 
-```bash
-appwrite push function
-```
+Every failure path returns the same `401` — unknown username and wrong password
+are indistinguishable to the caller.
 
-The client reads the function ID from `VITE_APPWRITE_LOGIN_FN_ID` (set to
-`login-resolver` in `.env`).
+An exact username match is tried first, falling back to a case-insensitive scan.
+That fallback pages only the first 100 rows, so it stops finding people beyond
+that; worth replacing with a lowercased indexed column before the user count
+gets there.
 
-## Test after deploy
+## Who calls it
 
-```bash
-# wrong password -> 401, no email
-appwrite functions create-execution \
-  --function-id login-resolver \
-  --body '{"username":"EddieeBOB","password":"wrong"}'
-
-# then verify a real login-by-username in the browser (MFA users still get the OTP step)
-```
+One caller: [`handleLogin()`](../../src/services/loginService.ts) in
+`src/services/loginService.ts`, and only when the submitted identifier contains
+no `@`. Sign in with an email and the function is never invoked. The client
+reads the function id from `VITE_APPWRITE_LOGIN_FN_ID`.
 
 ## Note on brute-force
 

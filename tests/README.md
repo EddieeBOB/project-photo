@@ -53,8 +53,9 @@ npm run test:integration
   key, which this suite intentionally doesn't use).
 - All galleries, photos, and files it creates are deleted at the end — the
   final test asserts they're gone.
-- The project schema must match `appwrite.config.json` (tables `users`,
-  `gallery`, `photos` + the storage bucket) with row/file security enabled.
+- Expects the `users`, `gallery`, and `photos` tables plus the storage bucket,
+  all with row/file security enabled — see
+  [docs/appwrite-backend.md](../docs/appwrite-backend.md).
 
 > ⚠️ `.env` currently points at your live project, so these tests run against
 > real data. They only ever create/delete their own clearly-named `Vitest`

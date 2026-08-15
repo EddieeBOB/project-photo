@@ -6,21 +6,20 @@ specific areas.
 
 ## Backend & security
 
-- [Appwrite backend configuration](./appwrite-backend.md) — the security model
-  (row/file-level permissions, why there are no table-wide grants), how to deploy
-  `appwrite.config.json`, and the required `VITE_APPWRITE_*` environment.
+- [Appwrite backend & security model](./appwrite-backend.md) — how row/file-level
+  permissions carry all authorization, why there are no table-wide grants, why
+  visibility changes cascade to files, and what the server-side function does.
 - [`login-resolver` function](../functions/login-resolver/README.md) — the
   server-side username → email resolver that lets users log in by username
-  without exposing anyone's email.
+  without exposing anyone's email: contract, resolution steps, and its callers.
 
 ## Testing
 
 - [Test suite overview](../tests/README.md) — the three layers (unit,
   integration, E2E), what each covers, and how to run them.
 - [2FA lifecycle E2E suite](../tests/e2e/2fa/README.md) — email-OTP two-factor
-  login coverage (Playwright + Page Object Model).
-- [Local Appwrite + Mailpit stack](../tests/e2e/2fa/docker/README.md) — the
-  Dockerized backend that makes the 2FA OTP tests fully automated.
+  login coverage (Playwright + Page Object Model), and the local Appwrite +
+  Mailpit stack that makes the OTP specs run unattended.
 
 ## Design system
 

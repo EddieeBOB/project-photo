@@ -23,7 +23,7 @@ import { Client, Account, Users, Databases, Query } from 'node-appwrite';
  *   400 { "error": "..." }                             malformed request
  *   401 { "error": "Invalid username or password." }   unknown user OR wrong password
  *
- * Dynamic API key scopes (declared in appwrite.config.json):
+ * Dynamic API key scopes granted to this function:
  *   documents.read, users.read, sessions.write
  *
  * NOTE on abuse: password verification here uses the admin key, which bypasses

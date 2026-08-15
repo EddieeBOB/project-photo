@@ -12,8 +12,8 @@ created/torn down through the Appwrite **server** SDK for speed and isolation.
 
 > **Automated pipeline (recommended):** run against a local Appwrite whose mailer
 > is pointed at **Mailpit**, and read the OTP back over Mailpit's REST API — no
-> real inbox, no human. Setup is in [`docker/README.md`](./docker/README.md); the
-> reader is [`fixtures/mailpit.ts`](./fixtures/mailpit.ts). This turns the two
+> real inbox, no human. The reader is
+> [`fixtures/mailpit.ts`](./fixtures/mailpit.ts). This turns the two
 > previously-manual specs into an unattended, CI-shaped run.
 
 ## Layout
@@ -42,7 +42,7 @@ tests/e2e/2fa/
 The suite targets Appwrite **Cloud** by default; adding a gitignored
 `tests/e2e/2fa/.env.e2e.local` flips `config.ts` (and, via the process.env it
 publishes, the Vite dev server) onto the local Appwrite+Mailpit stack — no code
-change. See [`docker/README.md`](./docker/README.md) for the exact keys.
+change. The keys it reads are listed under [Setup](#setup).
 
 ## What each spec covers
 
@@ -59,13 +59,30 @@ Appwrite + Mailpit); everything else needs only `APPWRITE_API_KEY`.
 
 ## Setup
 
-**Automated (local Appwrite + Mailpit)** — the recommended path. Follow
-[`docker/README.md`](./docker/README.md); it walks you through creating
-`tests/e2e/2fa/.env.e2e.local` (gitignored) with the local project id, a server
-API key (`users.read` + `users.write`), and `E2E_OTP_MODE=mailpit`. `config.ts`
-reads that file and publishes its `VITE_*` / `APPWRITE_*` / `MAILPIT_*` values
-into `process.env`, so both the Playwright process and the Vite dev server pick
-up the local stack.
+**Automated (local Appwrite + Mailpit)** — the recommended path. It needs a
+self-hosted Appwrite whose SMTP is pointed at Mailpit (the snippet in
+[`docker/appwrite.smtp.env`](./docker/appwrite.smtp.env) is what redirects the
+mailer; [`docker/docker-compose.mailpit.yml`](./docker/docker-compose.mailpit.yml)
+runs Mailpit itself via `npm run e2e:mailpit:up`). Pin the Appwrite version to
+the same major.minor as Cloud — the web SDK calls version-specific MFA routes, so
+a mismatch 401s locally while working against Cloud.
+
+Point the suite at it with a gitignored `tests/e2e/2fa/.env.e2e.local`:
+
+```
+VITE_APPWRITE_ENDPOINT=http://localhost/v1
+VITE_APPWRITE_PROJECT_ID=<local project id>
+APPWRITE_ENDPOINT=http://localhost/v1
+APPWRITE_PROJECT_ID=<local project id>
+APPWRITE_API_KEY=<server key: users.read + users.write>
+E2E_OTP_MODE=mailpit
+MAILPIT_URL=http://localhost:8025
+```
+
+`config.ts` reads that file and publishes its `VITE_*` / `APPWRITE_*` /
+`MAILPIT_*` values into `process.env`, so both the Playwright process and the
+Vite dev server pick up the local stack. The local project needs the **Email
+(OTP)** MFA factor enabled and a Web platform for `localhost`.
 
 **Manual (against Appwrite Cloud)** — put the same `APPWRITE_API_KEY`
 (server key with `users.read` + `users.write`) in the repo-root `.env`; endpoint
@@ -81,7 +98,7 @@ Test users are plus-addressed off `E2E_2FA_INBOX`.
 npm run test:e2e:2fa
 
 # FULLY AUTOMATED including the emailed-OTP specs, vs local Appwrite + Mailpit.
-# One-time setup: tests/e2e/2fa/docker/README.md
+# One-time setup: see Setup above.
 npm run e2e:mailpit:up             # start Mailpit (docker)
 npm run e2e:preflight              # verify stack is reachable
 npm run test:e2e:2fa:mailpit       # dev server in --mode e2e + Mailpit reader
@@ -113,10 +130,9 @@ API — zero humans:
    a re-send stays unambiguous.
 
 Reachability is checked in the `requireOtpReader` gate, so if Mailpit is down the
-OTP specs *skip with a clear reason* rather than failing. Full setup (local
-Appwrite install, SMTP wiring, project/key) is in
-[`docker/README.md`](./docker/README.md). The reader's logic is unit-tested
-without Docker in [`tests/unit/mailpit-reader.test.ts`](../../unit/mailpit-reader.test.ts).
+OTP specs *skip with a clear reason* rather than failing. The reader's logic is
+unit-tested without Docker in
+[`tests/unit/mailpit-reader.test.ts`](../../unit/mailpit-reader.test.ts).
 
 ### `E2E_OTP_MODE=manual` — file handshake (Cloud, human/Gmail-MCP)
 

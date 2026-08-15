@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
+import PhotoImage from '../components/PhotoImage';
 
 
 const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
@@ -14,7 +15,7 @@ const HeroTitle = [{ title: "Frame.", subtitle: "A Home for Every Lens." }]
 export default function Hero() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null } | null>(null);
+    const [artistData, setArtistData] = useState<{ name: string, title: string, imageUrl: string | null, thumbhash?: string } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -111,15 +112,14 @@ export default function Hero() {
                                 }}
                             >
                                 {artistData?.imageUrl && (
-                                    <img
+                                    <PhotoImage
                                         src={artistData.imageUrl}
                                         alt={artistData.name ? `Featured work by ${artistData.name}` : 'Featured photography'}
+                                        thumbhash={artistData.thumbhash}
+                                        // Nothing above sets a ratio, so without this the
+                                        // whole hero shifts when the photograph lands.
+                                        reserveSpace
                                         fetchPriority="high"
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            objectFit: 'cover'
-                                        }}
                                     />
                                 )}
                             </Box>

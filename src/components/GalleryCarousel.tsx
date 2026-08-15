@@ -14,6 +14,7 @@ import ProgressDots from './carousel/ProgressDots';
 import VisibilityToggle from './carousel/VisibilityToggle';
 import DeleteGalleryButton from './carousel/DeleteGalleryButton';
 import { MetadataField, MetadataGroup } from './carousel/PhotoMetadata';
+import PhotoImage from './PhotoImage';
 import { TrashIcon } from './icons';
 
 export interface GalleryCarouselProps {
@@ -64,14 +65,14 @@ function PhotoCard({
             }}
         >
             <Box sx={{ width: '100%', aspectRatio: { xs: '4/3', md: '16/9' }, backgroundColor: '#F3F3F3', mb: 3, position: 'relative' }}>
-                <img
+                <PhotoImage
                     src={photo.src}
                     alt={photo.title || 'Untitled photograph'}
+                    thumbhash={photo.thumbhash}
                     crossOrigin="anonymous"
                     loading="lazy"
                     width={1200}
                     height={675}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
                 {onDelete && (
                     <IconButton

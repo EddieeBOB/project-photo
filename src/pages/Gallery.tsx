@@ -138,7 +138,7 @@ export default function GalleryPage() {
                             pb: 3,
                         }}
                     >
-                        My Gallery
+                        The Public Gallery
                     </Typography>
                 </Container>
             )}

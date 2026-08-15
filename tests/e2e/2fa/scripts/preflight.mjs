@@ -94,5 +94,5 @@ if (!APPWRITE_ENDPOINT) {
 if (API_KEY) pass('APPWRITE_API_KEY present');
 else fail('APPWRITE_API_KEY missing (server key with users.read/users.write)');
 
-console.log(ok ? '\nAll checks passed. → npm run test:e2e:2fa:mailpit\n' : '\nPreflight failed. See tests/e2e/2fa/docker/README.md\n');
+console.log(ok ? '\nAll checks passed. → npm run test:e2e:2fa:mailpit\n' : '\nPreflight failed. See the Setup section in tests/e2e/2fa/README.md\n');
 process.exit(ok ? 0 : 1);
