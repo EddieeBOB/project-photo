@@ -2,13 +2,14 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import Switch from '@mui/material/Switch';
+
 import { useAuth } from '../contexts/AuthContext';
 import { sendVerificationEmail, setMfaEnabled } from '../services/authService';
+import Toast from '../components/Toast';
 import { colors, typography, PrimaryButton } from '../theme';
 
+/** Small outlined badge reading e.g. "Verified" / "Unverified". */
 function StatusPill({ ok, okLabel, badLabel }: { ok: boolean; okLabel: string; badLabel: string }) {
     return (
         <Box
@@ -31,6 +32,7 @@ function StatusPill({ ok, okLabel, badLabel }: { ok: boolean; okLabel: string; b
     );
 }
 
+/** Shared card framing for each settings section. */
 const sectionSx = {
     border: `1px solid ${colors.borderLight}`,
     backgroundColor: colors.surfaceBright,
@@ -38,6 +40,12 @@ const sectionSx = {
     mb: 3,
 } as const;
 
+/**
+ * Profile and security settings.
+ *
+ * Two-factor authentication depends on a verified email — Appwrite delivers the
+ * one-time code there — so its switch stays disabled until verification lands.
+ */
 export default function Account() {
     const { user, profile, checkAuth } = useAuth();
     const [busy, setBusy] = React.useState(false);
@@ -147,16 +155,8 @@ export default function Account() {
                 </Box>
             </Container>
 
-            <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
-                <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
-                    {errorMsg}
-                </Alert>
-            </Snackbar>
-            <Snackbar open={!!infoMsg} autoHideDuration={6000} onClose={() => setInfoMsg(null)}>
-                <Alert onClose={() => setInfoMsg(null)} severity="success" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
-                    {infoMsg}
-                </Alert>
-            </Snackbar>
+            <Toast message={errorMsg} onClose={() => setErrorMsg(null)} />
+            <Toast message={infoMsg} severity="success" onClose={() => setInfoMsg(null)} />
         </Box>
     );
 }

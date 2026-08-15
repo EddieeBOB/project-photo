@@ -14,66 +14,29 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Typography from '@mui/material/Typography';
 import Menu from '@mui/material/Menu';
+import type { Models } from 'appwrite';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { colors, typography, PrimaryButton, SecondaryButton } from '../theme';
+import UserSearch from './UserSearch';
+import ThemeToggle from './ThemeToggle';
+import { UserIcon } from './icons';
 import { account } from '../lib/appwrite';
 import { clearRememberPreference } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 
-const UserIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-    </svg>
-);
-
-const SunIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="5" />
-        <line x1="12" y1="1" x2="12" y2="3" />
-        <line x1="12" y1="21" x2="12" y2="23" />
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-        <line x1="1" y1="12" x2="3" y2="12" />
-        <line x1="21" y1="12" x2="23" y2="12" />
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-);
-
-const MoonIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-);
-
-function ThemeToggle() {
-    const { theme, toggleTheme } = useTheme();
-
-    return (
-        <IconButton
-            onClick={toggleTheme}
-            disableRipple
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            sx={{
-                color: colors.text,
-                p: 1,
-                border: `1px solid ${colors.borderLight}`,
-                borderRadius: '0px',
-                transition: 'border-color 0.3s ease, background-color 0.3s ease',
-                '&:hover': {
-                    borderColor: colors.text,
-                    backgroundColor: colors.hoverOverlaySubtle,
-                }
-            }}
-        >
-            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-        </IconButton>
-    );
+interface NavLink {
+    name: string;
+    path: string;
 }
+
+/**
+ * MUI's `styled()` wrappers lose the polymorphic `component` prop's typing, so
+ * router props are spread through an `object` cast. Isolated here rather than
+ * repeated inline at every call site.
+ */
+const routerLink = (to: string) => ({ component: RouterLink, to }) as object;
 
 const StyledToolbar = styled(Toolbar)({
     display: 'flex',
@@ -81,17 +44,18 @@ const StyledToolbar = styled(Toolbar)({
     justifyContent: 'space-between',
     flexShrink: 0,
     borderRadius: '0px',
-    backdropFilter: 'blur(24px)', // backdrop-blur-xl
+    backdropFilter: 'blur(24px)',
     border: `1px solid ${colors.borderLight}`,
     backgroundColor: colors.surfaceTransparent,
     padding: '12px 24px',
 });
 
+/** Text nav link that draws an underline out from its centre on hover. */
 const NavButton = styled(Button)({
     color: colors.text,
     fontFamily: typography.ui,
     fontWeight: 400,
-    fontSize: '14px', // Label Large
+    fontSize: '14px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
     borderRadius: '0px',
@@ -115,19 +79,218 @@ const NavButton = styled(Button)({
         color: colors.primary,
         '&::after': {
             width: '100%',
-        }
-    }
+        },
+    },
 });
 
+/** "ACCOUNT" over the signed-in user's name — shown in both menu and drawer. */
+function AccountIdentity({ user, sx }: { user: Models.User<Models.Preferences>; sx?: object }) {
+    const { t } = useTranslation();
+
+    return (
+        <Box sx={sx}>
+            <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+                {t('nav.account')}
+            </Typography>
+            <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
+                {user.name || user.email}
+            </Typography>
+        </Box>
+    );
+}
+
+/** Desktop avatar button and the account dropdown it opens. */
+function AccountMenu({
+    user,
+    onLogout,
+}: {
+    user: Models.User<Models.Preferences>;
+    onLogout: () => void;
+}) {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+    return (
+        <>
+            <IconButton
+                onClick={(event) => setAnchorEl(event.currentTarget)}
+                aria-label="Open account menu"
+                aria-haspopup="true"
+                aria-expanded={Boolean(anchorEl)}
+                sx={{
+                    color: colors.text,
+                    p: 1,
+                    border: `1px solid ${colors.borderLight}`,
+                    borderRadius: '0px',
+                    transition: 'border-color 0.3s ease, background-color 0.3s ease',
+                    '&:hover': {
+                        borderColor: colors.textSecondary,
+                        backgroundColor: colors.hoverOverlaySubtle,
+                    },
+                }}
+            >
+                <UserIcon />
+            </IconButton>
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+                // Any click inside closes the menu, so items don't each have to.
+                onClick={() => setAnchorEl(null)}
+                slotProps={{
+                    paper: {
+                        elevation: 0,
+                        sx: {
+                            overflow: 'visible',
+                            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.08))',
+                            mt: 1.5,
+                            borderRadius: '0px',
+                            border: `1px solid ${colors.borderLight}`,
+                            backgroundColor: colors.surfaceBright || '#fff',
+                            minWidth: '220px',
+                            '& .MuiMenuItem-root': {
+                                fontFamily: typography.ui,
+                                fontSize: '14px',
+                                color: colors.text,
+                                py: 1.5,
+                                px: 2,
+                                '&:hover': {
+                                    backgroundColor: colors.hoverOverlaySubtle,
+                                },
+                            },
+                        },
+                    },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <AccountIdentity user={user} sx={{ px: 2, py: 1.5 }} />
+                <MenuItem onClick={() => navigate('/account')}>
+                    {t('nav.account', 'Account')}
+                </MenuItem>
+                <MenuItem onClick={onLogout} sx={{ color: 'error.main' }}>
+                    {t('nav.logOut')}
+                </MenuItem>
+            </Menu>
+        </>
+    );
+}
+
+/** Full-width menu that drops from the top on small screens. */
+function MobileDrawer({
+    open,
+    onClose,
+    navLinks,
+    user,
+    onLogout,
+}: {
+    open: boolean;
+    onClose: () => void;
+    navLinks: NavLink[];
+    user: Models.User<Models.Preferences> | null;
+    onLogout: () => void;
+}) {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+
+    /** Drawer entries navigate and dismiss together. */
+    const goTo = (path: string) => () => {
+        onClose();
+        navigate(path);
+    };
+
+    const itemSx = { py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: colors.hoverOverlay } };
+
+    return (
+        <Drawer
+            anchor="top"
+            open={open}
+            onClose={onClose}
+            sx={{
+                '& .MuiDrawer-paper': {
+                    backdropFilter: 'blur(24px)',
+                    backgroundColor: colors.surfaceTransparent,
+                    borderBottom: `1px solid ${colors.borderLight}`,
+                    borderRadius: '0px',
+                    overscrollBehavior: 'contain',
+                },
+            }}
+        >
+            <Box sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <IconButton aria-label="Close navigation menu" onClick={onClose} sx={{ color: colors.text }}>
+                        <CloseRoundedIcon />
+                    </IconButton>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                    <UserSearch fullWidth onSelect={onClose} />
+                </Box>
+
+                <MenuList sx={{ p: 0 }}>
+                    {navLinks.map((link) => (
+                        <MenuItem key={link.name} onClick={goTo(link.path)} sx={itemSx}>
+                            <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{link.name}</Typography>
+                        </MenuItem>
+                    ))}
+
+                    <Divider sx={{ my: 2, borderColor: colors.borderLight }} />
+
+                    {user ? (
+                        <>
+                            <AccountIdentity user={user} sx={{ px: 2, pb: 2 }} />
+                            <MenuItem onClick={goTo('/account')} sx={itemSx}>
+                                <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{t('nav.account', 'Account')}</Typography>
+                            </MenuItem>
+                            <MenuItem sx={{ p: 0 }}>
+                                <SecondaryButton
+                                    fullWidth
+                                    disableRipple
+                                    onClick={() => { onClose(); onLogout(); }}
+                                    sx={{ color: 'error.main' }}
+                                >
+                                    {t('nav.logOut')}
+                                </SecondaryButton>
+                            </MenuItem>
+                        </>
+                    ) : (
+                        <>
+                            <MenuItem sx={{ p: 0, mb: 1 }}>
+                                <PrimaryButton fullWidth disableRipple onClick={goTo('/signup')}>
+                                    {t('nav.signUp')}
+                                </PrimaryButton>
+                            </MenuItem>
+                            <MenuItem sx={{ p: 0 }}>
+                                <SecondaryButton fullWidth disableRipple onClick={goTo('/login')}>
+                                    {t('nav.logIn')}
+                                </SecondaryButton>
+                            </MenuItem>
+                        </>
+                    )}
+                </MenuList>
+            </Box>
+        </Drawer>
+    );
+}
+
+/**
+ * The fixed top navigation: brand, section links, photographer search, theme
+ * toggle, and either the account menu or the sign-in buttons. Below `md` the
+ * links and account actions collapse into {@link MobileDrawer}.
+ */
 export default function NavBar() {
     const { t } = useTranslation();
-    const [open, setOpen] = React.useState(false);
+    const navigate = useNavigate();
     const { user, profile, checkAuth } = useAuth();
+    const [drawerOpen, setDrawerOpen] = React.useState(false);
 
-    const navLinks = React.useMemo(() => {
+    // Studio and the public-profile shortcut only exist for a signed-in user,
+    // and the latter only once their profile row has loaded.
+    const navLinks: NavLink[] = React.useMemo(() => {
         const links = [
             { name: 'Gallery', path: '/gallery' },
-            { name: 'About', path: '/about' }
+            { name: 'About', path: '/about' },
         ];
         if (user) {
             links.push({ name: 'Studio', path: '/studio' });
@@ -137,16 +300,6 @@ export default function NavBar() {
         }
         return links;
     }, [user, profile]);
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const navigate = useNavigate();
-
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
 
     const handleLogout = async () => {
         try {
@@ -155,12 +308,8 @@ export default function NavBar() {
             await checkAuth(); // Refresh global auth context state (sets user to null)
             navigate('/');
         } catch (error) {
-            console.error("Logout failed:", error);
+            console.error('Logout failed:', error);
         }
-    };
-
-    const toggleDrawer = (newOpen: boolean) => () => {
-        setOpen(newOpen);
     };
 
     return (
@@ -174,6 +323,7 @@ export default function NavBar() {
         >
             <Container maxWidth="lg" sx={{ px: { xs: 0, sm: 2 }, mt: { xs: 0, sm: 4 } }}>
                 <StyledToolbar variant="regular" disableGutters>
+                    {/* Brand and section links */}
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Typography
                             variant="h6"
@@ -196,90 +346,20 @@ export default function NavBar() {
                             {t('nav.frame')}
                         </Typography>
                         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-                            {navLinks.map((item) => (
-                                <NavButton key={item.name} {...({ component: RouterLink, to: item.path } as object)} disableRipple>
-                                    {item.name}
+                            {navLinks.map((link) => (
+                                <NavButton key={link.name} {...routerLink(link.path)} disableRipple>
+                                    {link.name}
                                 </NavButton>
                             ))}
                         </Box>
                     </Box>
-                    <Box
-                        sx={{
-                            display: { xs: 'none', md: 'flex' },
-                            gap: 2,
-                            alignItems: 'center',
-                        }}
-                    >
+
+                    {/* Desktop actions */}
+                    <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, alignItems: 'center' }}>
+                        <UserSearch />
                         <ThemeToggle />
                         {user ? (
-                            <>
-                                <IconButton
-                                    onClick={handleMenuOpen}
-                                    aria-label="Open account menu"
-                                    aria-haspopup="true"
-                                    aria-expanded={Boolean(anchorEl)}
-                                    sx={{
-                                        color: colors.text,
-                                        p: 1,
-                                        border: `1px solid ${colors.borderLight}`,
-                                        borderRadius: '0px',
-                                        transition: 'border-color 0.3s ease, background-color 0.3s ease',
-                                        '&:hover': {
-                                            borderColor: colors.textSecondary,
-                                            backgroundColor: colors.hoverOverlaySubtle,
-                                        }
-                                    }}
-                                >
-                                    <UserIcon />
-                                </IconButton>
-                                <Menu
-                                    anchorEl={anchorEl}
-                                    open={Boolean(anchorEl)}
-                                    onClose={handleMenuClose}
-                                    onClick={handleMenuClose}
-                                    slotProps={{
-                                        paper: {
-                                            elevation: 0,
-                                            sx: {
-                                                overflow: 'visible',
-                                                filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.08))',
-                                                mt: 1.5,
-                                                borderRadius: '0px',
-                                                border: `1px solid ${colors.borderLight}`,
-                                                backgroundColor: colors.surfaceBright || '#fff',
-                                                minWidth: '220px',
-                                                '& .MuiMenuItem-root': {
-                                                    fontFamily: typography.ui,
-                                                    fontSize: '14px',
-                                                    color: colors.text,
-                                                    py: 1.5,
-                                                    px: 2,
-                                                    '&:hover': {
-                                                        backgroundColor: colors.hoverOverlaySubtle,
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }}
-                                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                                >
-                                    <Box sx={{ px: 2, py: 1.5 }}>
-                                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
-                                            {t('nav.account')}
-                                        </Typography>
-                                        <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
-                                            {user.name || user.email}
-                                        </Typography>
-                                    </Box>
-                                    <MenuItem onClick={() => navigate('/account')}>
-                                        {t('nav.account', 'Account')}
-                                    </MenuItem>
-                                    <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                                        {t('nav.logOut')}
-                                    </MenuItem>
-                                </Menu>
-                            </>
+                            <AccountMenu user={user} onLogout={handleLogout} />
                         ) : (
                             <>
                                 <SecondaryButton size="small" disableRipple onClick={() => navigate('/login')}>
@@ -291,93 +371,25 @@ export default function NavBar() {
                             </>
                         )}
                     </Box>
+
+                    {/* Mobile actions */}
                     <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1.5 }}>
                         <ThemeToggle />
-                        <IconButton aria-label="Open navigation menu" aria-expanded={open} onClick={toggleDrawer(true)} sx={{ color: colors.text }}>
+                        <IconButton
+                            aria-label="Open navigation menu"
+                            aria-expanded={drawerOpen}
+                            onClick={() => setDrawerOpen(true)}
+                            sx={{ color: colors.text }}
+                        >
                             <MenuIcon />
                         </IconButton>
-                        <Drawer
-                            anchor="top"
-                            open={open}
-                            onClose={toggleDrawer(false)}
-                            sx={{
-                                '& .MuiDrawer-paper': {
-                                    backdropFilter: 'blur(24px)',
-                                    backgroundColor: colors.surfaceTransparent,
-                                    borderBottom: `1px solid ${colors.borderLight}`,
-                                    borderRadius: '0px',
-                                    overscrollBehavior: 'contain',
-                                }
-                            }}
-                        >
-                            <Box sx={{ p: 3 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                                    <IconButton aria-label="Close navigation menu" onClick={toggleDrawer(false)} sx={{ color: colors.text }}>
-                                        <CloseRoundedIcon />
-                                    </IconButton>
-                                </Box>
-                                <MenuList sx={{ p: 0 }}>
-                                {navLinks.map((item) => (
-                                    <MenuItem
-                                        key={item.name}
-                                        onClick={() => {
-                                            setOpen(false);
-                                            navigate(item.path);
-                                        }}
-                                        sx={{ py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: colors.hoverOverlay } }}
-                                    >
-                                        <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{item.name}</Typography>
-                                    </MenuItem>
-                                ))}
-                                <Divider sx={{ my: 2, borderColor: colors.borderLight }} />
-                                {user ? (
-                                    <>
-                                        <Box sx={{ px: 2, pb: 2 }}>
-                                            <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
-                                                {t('nav.account')}
-                                            </Typography>
-                                            <Typography sx={{ fontFamily: typography.ui, color: colors.text, fontWeight: 500, fontSize: '14px', wordBreak: 'break-all' }}>
-                                                {user.name || user.email}
-                                            </Typography>
-                                        </Box>
-                                        <MenuItem
-                                            onClick={() => { setOpen(false); navigate('/account'); }}
-                                            sx={{ py: 1.5, borderRadius: '0px', '&:hover': { backgroundColor: colors.hoverOverlay } }}
-                                        >
-                                            <Typography sx={{ fontFamily: typography.ui, color: colors.text }}>{t('nav.account', 'Account')}</Typography>
-                                        </MenuItem>
-                                        <MenuItem sx={{ p: 0 }}>
-                                            <SecondaryButton fullWidth disableRipple onClick={() => {
-                                                setOpen(false);
-                                                handleLogout();
-                                            }} sx={{ color: 'error.main' }}>
-                                                {t('nav.logOut')}
-                                            </SecondaryButton>
-                                        </MenuItem>
-                                    </>
-                                ) : (
-                                    <>
-                                        <MenuItem sx={{ p: 0, mb: 1 }}>
-                                            <PrimaryButton fullWidth disableRipple onClick={() => {
-                                                setOpen(false);
-                                                navigate('/signup');
-                                            }}>
-                                                {t('nav.signUp')}
-                                            </PrimaryButton>
-                                        </MenuItem>
-                                        <MenuItem sx={{ p: 0 }}>
-                                            <SecondaryButton fullWidth disableRipple onClick={() => {
-                                                setOpen(false);
-                                                navigate('/login');
-                                            }}>
-                                                {t('nav.logIn')}
-                                            </SecondaryButton>
-                                        </MenuItem>
-                                    </>
-                                )}
-                                </MenuList>
-                            </Box>
-                        </Drawer>
+                        <MobileDrawer
+                            open={drawerOpen}
+                            onClose={() => setDrawerOpen(false)}
+                            navLinks={navLinks}
+                            user={user}
+                            onLogout={handleLogout}
+                        />
                     </Box>
                 </StyledToolbar>
             </Container>

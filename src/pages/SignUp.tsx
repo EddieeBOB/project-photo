@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+
 import { handleSignUp as handleSignUpService } from '../services/signupService';
 import { setRememberPreference } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
-import { getSignupPhoto } from '../services/photoService';
+import { getSignupPhoto } from '../services/imageUrls';
 import PasswordRequirements from '../components/PasswordRequirements';
+import AuthSideImage from '../components/AuthSideImage';
+import Copyright from '../components/Copyright';
+import Toast from '../components/Toast';
 import { isPasswordValid } from '../utils/password';
 
 import { colors, typography, PrimaryButton, StyledTextField } from '../theme';
@@ -46,30 +49,9 @@ export default function SignUp() {
 
     return (
         <Box sx={{ display: 'flex', flexGrow: 1, backgroundColor: colors.surface, height: '100vh'}}>
-            {/* Left side: Image */}
-            <Box sx={{
-                flex: 1,
-                display: { xs: 'none', md: 'block' },
-                position: 'relative'
-            }}>
-                <img
-                    src={getSignupPhoto()}
-                    alt=""
-                    width={1200}
-                    height={1600}
-                    loading="lazy"
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                    }}
-                />
-            </Box>
+            <AuthSideImage src={getSignupPhoto()} />
 
-            {/* Right side: Form */}
+            {/* Form */}
             <Box sx={{
                 flex: 1,
                 display: 'flex',
@@ -159,18 +141,11 @@ export default function SignUp() {
                             </Link>
                         </Typography>
                     </Box>
-                    <Box sx={{ mt: 4, textAlign: 'center' }}>
-                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            © {new Date().getFullYear()} Frame Collective.
-                        </Typography>
-                    </Box>
+                    <Copyright />
                 </Box>
             </Box>
-            <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
-                <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
-                    {errorMsg}
-                </Alert>
-            </Snackbar>
+
+            <Toast message={errorMsg} onClose={() => setErrorMsg(null)} />
         </Box>
     );
 }

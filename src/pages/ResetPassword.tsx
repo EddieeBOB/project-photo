@@ -1,14 +1,21 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
-import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+
 import AuthLayout from '../components/AuthLayout';
 import PasswordRequirements from '../components/PasswordRequirements';
+import Toast from '../components/Toast';
 import { isPasswordValid } from '../utils/password';
 import { confirmPasswordReset } from '../services/authService';
-import { PrimaryButton, SecondaryButton, StyledTextField } from '../theme';
+import { PrimaryButton, SecondaryButton, StyledTextField, typography } from '../theme';
 
+/**
+ * Sets a new password from an emailed reset link.
+ *
+ * `userId` and `secret` arrive as query parameters; without both there is
+ * nothing to authorise the change, so the form is never shown.
+ */
 export default function ResetPassword() {
     const [params] = useSearchParams();
     const navigate = useNavigate();
@@ -98,7 +105,7 @@ export default function ResetPassword() {
                         error={mismatch}
                     />
                     {validationError && (
-                        <Alert severity="error" sx={{ borderRadius: '0px', fontFamily: 'Inter, sans-serif' }}>
+                        <Alert severity="error" sx={{ borderRadius: '0px', fontFamily: typography.ui }}>
                             {validationError}
                         </Alert>
                     )}
@@ -110,11 +117,7 @@ export default function ResetPassword() {
                     </SecondaryButton>
                 </Box>
             </form>
-            <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
-                <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: 'Inter, sans-serif' }}>
-                    {errorMsg}
-                </Alert>
-            </Snackbar>
+            <Toast message={errorMsg} onClose={() => setErrorMsg(null)} />
         </AuthLayout>
     );
 }

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { account, tablesDB } from '../lib/appwrite';
 import type { Models } from 'appwrite';
 import { isAutoLoginAllowed, clearRememberPreference } from '../services/authService';
-import type { UserRow } from '../services/photoService';
+import type { UserRow } from '../services/userService';
 
 interface AuthContextType {
     user: Models.User<Models.Preferences> | null;

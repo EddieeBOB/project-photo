@@ -1,13 +1,19 @@
 import { useState } from 'react';
 import Box from '@mui/material/Box';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
 import { Link } from 'react-router-dom';
+
 import AuthLayout from '../components/AuthLayout';
+import Toast from '../components/Toast';
 import { sendPasswordReset } from '../services/authService';
 import { colors, typography, PrimaryButton, SecondaryButton, StyledTextField } from '../theme';
 
+/**
+ * Requests a password-reset email.
+ *
+ * The confirmation is deliberately non-committal ("if an account exists") so
+ * the page can't be used to check which email addresses are registered.
+ */
 export default function ForgotPassword() {
     const [email, setEmail] = useState('');
     const [sent, setSent] = useState(false);
@@ -66,11 +72,7 @@ export default function ForgotPassword() {
                     </Link>
                 </Typography>
             </Box>
-            <Snackbar open={!!errorMsg} autoHideDuration={6000} onClose={() => setErrorMsg(null)}>
-                <Alert onClose={() => setErrorMsg(null)} severity="error" sx={{ width: '100%', borderRadius: '0px', fontFamily: typography.ui }}>
-                    {errorMsg}
-                </Alert>
-            </Snackbar>
+            <Toast message={errorMsg} onClose={() => setErrorMsg(null)} />
         </AuthLayout>
     );
 }

@@ -3,64 +3,82 @@ import { useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import GalleryCarousel, { GalleryCarouselSkeleton } from '../components/GalleryCarousel';
-import type { Gallery, CarouselPhoto } from '../components/EditableGalleryCarousel';
-import { fetchUserGalleryByUsername, mapGalleryToCarousel } from '../services/photoService';
+
+import GalleryCarousel from '../components/GalleryCarousel';
+import GalleryCarouselSkeleton from '../components/carousel/GalleryCarouselSkeleton';
+import type { GalleryWithPhotos } from '../types/gallery';
+import { mapGalleryToCarousel } from '../services/galleryService';
+import { fetchUserGalleryByUsername } from '../services/userService';
+import { isPresent } from '../utils/isPresent';
 import { colors, typography } from '../theme';
 
+interface ProfileData {
+    artistName: string;
+    galleries: GalleryWithPhotos[];
+}
+
+/** Empty state for a username that exists but has published nothing publicly. */
+function NoExhibitions() {
+    return (
+        <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, py: 10 }}>
+            <Box sx={{ border: `1px dashed ${colors.borderLight}`, py: 8, px: 3, textAlign: 'center' }}>
+                <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary }}>
+                    This photographer has not published any public exhibitions yet.
+                </Typography>
+            </Box>
+        </Container>
+    );
+}
+
+/**
+ * A photographer's public page at /user/:username.
+ *
+ * Only galleries explicitly marked public are listed. Appwrite would refuse to
+ * serve the others anyway, but filtering here keeps a private exhibition from
+ * appearing as an empty card.
+ */
 export default function PublicProfile() {
     const { username } = useParams<{ username: string }>();
+    const [profile, setProfile] = React.useState<ProfileData | null>(null);
     const [loading, setLoading] = React.useState(true);
-    const [artistName, setArtistName] = React.useState<string>('');
-    const [publicGalleries, setPublicGalleries] = React.useState<(Gallery & { photos: CarouselPhoto[] })[]>([]);
-    const [error, setError] = React.useState<boolean>(false);
+    const [notFound, setNotFound] = React.useState(false);
 
     React.useEffect(() => {
         if (!username) return;
 
-        let isMounted = true;
+        let cancelled = false;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- reset loading/error state before re-fetching on username change
         setLoading(true);
-        setError(false);
+        setNotFound(false);
 
-        const loadPublicProfile = async () => {
+        const load = async () => {
             try {
-                const fetchedUser = await fetchUserGalleryByUsername(username);
-                if (!isMounted) return;
+                const fetched = await fetchUserGalleryByUsername(username);
+                if (cancelled) return;
 
-                if (!fetchedUser) {
-                    setError(true);
-                    setLoading(false);
+                if (!fetched) {
+                    setNotFound(true);
                     return;
                 }
 
-                const fullName = fetchedUser.username || 'Artist';
-                setArtistName(fullName);
-
-                const rawGalleries = fetchedUser.gallery || [];
-                const mappedGalleries = rawGalleries
-                    .map((fetchedGallery) => mapGalleryToCarousel(fetchedGallery, fetchedUser.$id))
-                    .filter((g): g is NonNullable<typeof g> => g !== null)
-                    .filter((g) => g.isPublic === true);
-
-                setPublicGalleries(mappedGalleries);
-            } catch (err) {
-                console.error("Failed to load public profile:", err);
-                if (isMounted) {
-                    setError(true);
-                }
+                setProfile({
+                    artistName: fetched.username || 'Artist',
+                    galleries: (fetched.gallery ?? [])
+                        .map((gallery) => mapGalleryToCarousel(gallery, fetched.$id))
+                        .filter(isPresent)
+                        .filter((gallery) => gallery.isPublic),
+                });
+            } catch (error) {
+                console.error('Failed to load public profile:', error);
+                if (!cancelled) setNotFound(true);
             } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
+                if (!cancelled) setLoading(false);
             }
         };
 
-        loadPublicProfile();
+        load();
 
-        return () => {
-            isMounted = false;
-        };
+        return () => { cancelled = true; };
     }, [username]);
 
     if (loading) {
@@ -75,7 +93,7 @@ export default function PublicProfile() {
         );
     }
 
-    if (error || !artistName) {
+    if (notFound || !profile) {
         return (
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', px: 3, backgroundColor: colors.surfaceBright }}>
                 <Typography variant="h1" sx={{ fontFamily: typography.headline, fontSize: '48px', color: colors.text, mb: 2 }}>
@@ -99,10 +117,10 @@ export default function PublicProfile() {
                         fontWeight: 400,
                         color: colors.text,
                         mb: 1,
-                        letterSpacing: '-0.02em'
+                        letterSpacing: '-0.02em',
                     }}
                 >
-                    {artistName}
+                    {profile.artistName}
                 </Typography>
                 <Typography
                     variant="body1"
@@ -111,31 +129,24 @@ export default function PublicProfile() {
                         fontSize: '14px',
                         color: colors.textSecondary,
                         letterSpacing: '0.1em',
-                        textTransform: 'uppercase'
+                        textTransform: 'uppercase',
                     }}
                 >
                     Public Exhibitions
                 </Typography>
             </Container>
 
-            {/* Public Galleries List */}
-            {publicGalleries.length > 0 ? (
-                publicGalleries.map((gallery, index) => (
+            {profile.galleries.length > 0 ? (
+                profile.galleries.map((gallery, index) => (
                     <GalleryCarousel
                         key={gallery.id}
                         gallery={gallery}
                         index={index}
-                        authorName={artistName}
+                        authorName={profile.artistName}
                     />
                 ))
             ) : (
-                <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 }, py: 10 }}>
-                    <Box sx={{ border: `1px dashed ${colors.borderLight}`, py: 8, px: 3, textAlign: 'center' }}>
-                        <Typography sx={{ fontFamily: typography.ui, color: colors.textSecondary }}>
-                            This photographer has not published any public exhibitions yet.
-                        </Typography>
-                    </Box>
-                </Container>
+                <NoExhibitions />
             )}
         </Box>
     );

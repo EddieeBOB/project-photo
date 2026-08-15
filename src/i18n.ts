@@ -27,7 +27,11 @@ const resources = {
         "studioWorkspace": "Studio Workspace",
         "logOut": "Log Out",
         "logIn": "Log In",
-        "signUp": "Sign Up"
+        "signUp": "Sign Up",
+        "searchPlaceholder": "Search photographers",
+        "searchPhotographers": "Search photographers",
+        "searching": "Searching…",
+        "noPhotographers": "No photographers found"
       },
       "signup": {
         "joinFrame": "Join Frame.",

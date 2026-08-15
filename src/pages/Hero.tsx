@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
-import { fetchFeaturedArtist } from '../services/photoService';
+import { fetchFeaturedArtist } from '../services/galleryService';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';

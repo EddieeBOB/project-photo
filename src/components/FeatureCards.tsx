@@ -4,35 +4,10 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 
-// Globe icon
-const GlobeIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="2" y1="12" x2="22" y2="12" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-);
-
-// HD icon
-const HDIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-        <path d="M7 9v6M11 9v6M7 12h4M14 9h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2V9z" />
-    </svg>
-);
-
-// Users icon
-const UsersIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-);
-
 import { colors, typography } from '../theme';
+import { GlobeIcon, HDIcon, UsersIcon } from './icons';
 
+/** Lifts on hover, for anyone who hasn't asked for reduced motion. */
 const CardContainer = styled(Box)({
     border: `1px solid ${colors.borderLight}`,
     padding: '40px 32px',
@@ -65,21 +40,22 @@ const IconWrapper = styled(Box)({
 const features = [
     {
         icon: <GlobeIcon />,
-        title: "Open Ecosystem",
-        description: "If you have a story to tell through your lens, you belong here."
+        title: 'Open Ecosystem',
+        description: 'If you have a story to tell through your lens, you belong here.',
     },
     {
         icon: <HDIcon />,
-        title: "Lossy Compression",
-        description: "All images are balanced between quality and file size so you can showcase your work without compromise."
+        title: 'Lossy Compression',
+        description: 'All images are balanced between quality and file size so you can showcase your work without compromise.',
     },
     {
         icon: <UsersIcon />,
-        title: "Share your Portfolio",
-        description: "Easily create and share your portfolio with anyone, anywhere."
-    }
+        title: 'Share your Portfolio',
+        description: 'Easily create and share your portfolio with anyone, anywhere.',
+    },
 ];
 
+/** The three-up pitch below the hero on the landing page. */
 export default function FeatureCards() {
     return (
         <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: colors.surfaceBright }}>
@@ -95,7 +71,7 @@ export default function FeatureCards() {
                         mb: { xs: 6, md: 8 }
                     }}
                 >
-                    <Box sx={{ maxWidth: 'auto' }}>
+                    <Box>
                         <Typography
                             variant="h2"
                             sx={{

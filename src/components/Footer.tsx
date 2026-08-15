@@ -9,6 +9,9 @@ import { useTranslation } from 'react-i18next';
 
 import { colors, typography } from '../theme';
 import PrivacyPolicy from './PrivacyPolicy';
+import { DiscordIcon } from './icons';
+
+const DISCORD_INVITE_URL = 'https://discord.gg/MbfDPNSkJg';
 
 const FooterLink = styled(Link)({
     color: colors.textSecondary,
@@ -23,10 +26,11 @@ const FooterLink = styled(Link)({
     }
 });
 
-const SocialIcon = () => (
+/** Link out to the community server. */
+const DiscordLink = () => (
     <Box
         component="a"
-        href="https://discord.gg/MbfDPNSkJg"
+        href={DISCORD_INVITE_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Visit our Discord server"
@@ -34,24 +38,10 @@ const SocialIcon = () => (
             color: colors.textSecondary,
             display: 'flex',
             transition: 'color 0.2s ease',
-            '&:hover': { color: colors.text }
+            '&:hover': { color: colors.text },
         }}
     >
-        <svg
-            width="30"
-            height="30"
-            viewBox="0 0 48 48"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M17.59,34.1733c-.89,1.3069-1.8944,2.6152-2.91,3.8267C7.3,37.79,4.5,33,4.5,33A44.83,44.83,0,0,1,9.31,13.48,16.47,16.47,0,0,1,18.69,10l1,2.31A32.6875,32.6875,0,0,1,24,12a32.9643,32.9643,0,0,1,4.33.3l1-2.31a16.47,16.47,0,0,1,9.38,3.51A44.8292,44.8292,0,0,1,43.5,33s-2.8,4.79-10.18,5a47.4193,47.4193,0,0,1-2.86-3.81m6.46-2.9c-3.84,1.9454-7.5555,3.89-12.92,3.89s-9.08-1.9446-12.92-3.89" />
-            <circle cx="17.847" cy="26.23" r="3.35" />
-            <circle cx="30.153" cy="26.23" r="3.35" />
-        </svg>
+        <DiscordIcon size={30} />
     </Box>
 );
 
@@ -95,7 +85,7 @@ export default function Footer() {
                     {/* Socials / Language */}
                     <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                         <Typography sx={{ fontFamily: typography.ui, fontSize: '12px', color: colors.textSecondary }}>EN</Typography>
-                        <SocialIcon />
+                        <DiscordLink />
                     </Box>
                 </Box>
             </Container>
