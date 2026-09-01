@@ -189,7 +189,7 @@ erDiagram
     }
 ```
 
-![Backend Example](./backend.svg)
+![Backend Example](/docs/backend.svg)
 
 ---
 
