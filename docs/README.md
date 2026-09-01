@@ -13,6 +13,39 @@ specific areas.
   server-side username → email resolver that lets users log in by username
   without exposing anyone's email: contract, resolution steps, and its callers.
 
+#### Diagrams
+```mermaid
+erDiagram
+    USERS ||--o{ GALLERY : owns
+    GALLERY ||--o{ PHOTOS: contains
+
+    PHOTOS {
+        string id
+        string title
+        string description
+        boolean isFrontPage
+        string imageID
+        string exposure
+        string iso
+        string lens
+        string thumbhash
+    }
+
+    GALLERY {
+        string id
+        string galleryTitle
+        boolean isPublic
+    }
+
+    USERS {
+        string id
+        string username
+    }
+```
+
+![Backend Example](./backend.svg)
+
+
 ## Testing
 
 - [Test suite overview](../tests/README.md) — the three layers (unit,

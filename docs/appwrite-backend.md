@@ -52,8 +52,6 @@ username → email mapping to leak, because the mapping does not live there.
 
 Resolving that mapping is what the `login-resolver` function exists for.
 
-![Data model: a user owns many galleries, each gallery holds many photo rows, and each photo row points at one file in the storage bucket by id.](./backend.svg)
-
 ## Server-side functions
 
 The only server-side code in the project is one Appwrite Function.
