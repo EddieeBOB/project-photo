@@ -37,12 +37,6 @@ Every photographer gets a shareable public page at `/user/:username` listing the
 Editorial "about" narrative that carries the same Luminous Editorial type and spacing.
 ![About Page](./public/assets/screenshot_about.png)
 
-### Authentication
-Split-screen sign-up and login with username-only accounts, live password validation, and sharp outlines.
-
-| Sign Up | Log In |
-| --- | --- |
-| ![Sign Up](./public/assets/screenshot_signup.png) | ![Login](./public/assets/screenshot_login.png) |
 
 ### Responsive
 Fully responsive down to mobile, with a slide-out navigation drawer.
@@ -50,7 +44,6 @@ Fully responsive down to mobile, with a slide-out navigation drawer.
 <img src="./public/assets/screenshot_mobile.png" alt="Mobile view" width="320" />
 
 ---
-
 ## Features
 ### Portfolio & Studio
 - **Public gallery** (`/gallery`) - a horizontal carousel showcasing published
@@ -163,6 +156,40 @@ Three layers - full details in [tests/README.md](./tests/README.md):
   The **[2FA lifecycle suite](./tests/e2e/2fa/README.md)** runs email-OTP login
   end-to-end against a local Appwrite + Mailpit stack, reading the OTP back over
   Mailpit's API - fully automated, no human.
+
+---
+## Diagrams
+#### Diagrams
+```mermaid
+erDiagram
+    USERS ||--o{ GALLERY : owns
+    GALLERY ||--o{ PHOTOS: contains
+
+    PHOTOS {
+        string id
+        string title
+        string description
+        boolean isFrontPage
+        string imageID
+        string exposure
+        string iso
+        string lens
+        string thumbhash
+    }
+
+    GALLERY {
+        string id
+        string galleryTitle
+        boolean isPublic
+    }
+
+    USERS {
+        string id
+        string username
+    }
+```
+
+![Backend Example](./backend.svg)
 
 ---
 
