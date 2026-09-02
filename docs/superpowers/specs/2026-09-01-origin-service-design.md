@@ -32,8 +32,9 @@ and read fallback.
   original, with a proper resampling kernel.
 - Serve the **native original file, untouched**, when a photo is opened
   fullscreen. The ladder covers every other view.
-- Keep a copy of every owner photo in Appwrite so the site degrades rather than
-  breaks when the home server is unreachable.
+- Keep a copy of every owner photo in Appwrite — written by the studio on its
+  existing code path — so the site degrades rather than breaks when the home
+  server is unreachable.
 - Introduce a real SQL data model the owner controls, with versioned migrations.
 - Change nothing for other users, and nothing on the live read path in this
   sub-project.
@@ -79,7 +80,7 @@ Four containers, one Compose file, on a Linux host at home.
                      [caddy]       /i/*  -> static files, immutable cache
                         |          /v1/* -> reverse proxy
                         |
-                    [origin]       Node + sharp: ingest, transcode, backup push
+                    [origin]       Node + sharp: ingest, transcode, serve
                         |
                    [postgres]      record of originals, derivatives, EXIF
 ```
@@ -89,8 +90,8 @@ Four containers, one Compose file, on a Linux host at home.
 - **`caddy`** — serves `/data/public` as static files and reverse-proxies the
   API. Reads never touch application code, so a crashed `origin` container does
   not stop images being served.
-- **`origin`** — the only writer. Verifies JWTs, stores originals, transcodes,
-  writes Postgres, pushes the Appwrite backup.
+- **`origin`** — the only writer of its own data. Verifies JWTs, stores
+  originals, transcodes, writes Postgres. It has no write access to Appwrite.
 - **`postgres`** — PostgreSQL 17.
 
 ### Why pre-generated rather than on-demand
@@ -193,9 +194,10 @@ create table photo (
   is_public        boolean not null default false,
   ladder_ready     boolean not null default false,
 
-  appwrite_row_id  text unique,         -- backup pointer; also the migration map
+  -- Client-supplied correlation pointers. Untrusted: never used to decide
+  -- authorization. Also the mapping used by the sub-project 2 migration.
+  appwrite_row_id  text unique,
   appwrite_file_id text unique,
-  backed_up_at     timestamptz,         -- null => backup owed, reconcile retries
 
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
@@ -205,7 +207,6 @@ create table photo (
 create unique index photo_owner_sha on photo (owner_id, original_sha256);
 create index photo_gallery_pos      on photo (gallery_id, position);
 create unique index photo_front_page on photo (owner_id) where is_front_page;
-create index photo_backup_pending   on photo (created_at) where backed_up_at is null;
 create index photo_ladder_pending   on photo (created_at) where not ladder_ready;
 
 create table derivative (
@@ -271,16 +272,63 @@ never observes a half-written derivative or manifest.
 
 ## Ingest
 
+### The studio writes to both backends
+
+The browser is the fan-out point. It does **not** hand the original to the
+origin and let the origin relay a copy onward:
+
+```
+                        studio (browser)
+                         /                \
+       1200px + row     /                  \   untouched original
+                       v                    v
+              [Appwrite Cloud]         [origin @ home]
+        rows, files, permissions    originals, ladder, Postgres
+```
+
+**Appwrite first, origin second.** The Appwrite write is the existing path,
+completely unchanged — `pica` downscales, `createImage` uploads and creates the
+row with `ownerPermissions()`, and `rollbackGallery` still cleans up on failure.
+Only once that has succeeded does the studio send the original to the origin.
+
+Two things fall out of this ordering, and both are why it is worth insisting on:
+
+- **The origin needs no Appwrite write key.** Under a relay design it would hold
+  a server key that bypasses permissions entirely and would have to re-implement
+  `ownerPermissions()` correctly on its own. Now the owner's photos are
+  permissioned by the same browser code path as every other user's, with the
+  owner's own session. One implementation, no divergence.
+- **An origin failure cannot orphan anything.** Appwrite is already consistent
+  when the origin is called, so a failed or skipped origin upload leaves a photo
+  that publishes and renders exactly as it does today, minus the full-res tier.
+  That is precisely the degradation behaviour chosen for this design, reached by
+  doing nothing rather than by unwinding.
+
+The reverse ordering was rejected: an origin-first write that then failed at
+Appwrite would leave an archived original belonging to no published photo, and
+the origin has no way to discover that on its own.
+
+### Request
+
 `POST /v1/ingest`, `multipart/form-data`, `Authorization: Bearer <appwrite-jwt>`.
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `file` | binary | The untouched original. |
 | `galleryId` | uuid | Must exist and be owned by the caller. |
+| `appwriteRowId` | string | The `photos` row the studio just created. |
+| `appwriteFileId` | string | The 1200px file the studio just uploaded. |
+| `isPublic` | bool | Mirrors the gallery's visibility at publish time. |
 | `title` | string | Optional, defaults to `''`. |
 | `description` | string | Optional, defaults to `''`. |
 | `position` | int | Optional, defaults to `0`. |
 | `thumbhash` | string | Optional. Computed browser-side as today. |
+
+`appwriteRowId` and `appwriteFileId` are **correlation pointers only**. They are
+client-supplied and therefore untrusted: nothing about authorization or
+visibility is decided from them. Identity still comes from the verified JWT, and
+`isPublic` is treated as a hint that the reconciliation pass independently
+verifies (see [Reconciliation](#reconciliation)).
 
 Request body cap: **100MB**, matching Cloudflare's proxied-request limit. Larger
 files are rejected with `413` and a message naming the limit, rather than being
@@ -296,9 +344,7 @@ Synchronous steps, in order:
 4. Probe dimensions and extract EXIF.
 5. Move the file into `originals/`.
 6. Insert the `photo` and `exif` rows in one transaction.
-7. Encode the 1200px JPEG at quality 85 and push it to Appwrite (see
-   [Appwrite backup](#appwrite-backup)).
-8. Respond `201 { photoId, galleryId, ladderReady: false }`.
+7. Respond `201 { photoId, galleryId, ladderReady: false }`.
 
 Then, after the response: the ladder transcode is scheduled.
 
@@ -403,27 +449,19 @@ Response headers:
   `https://photoframes.me` in production, plus the Vite dev origin locally.
 - `X-Content-Type-Options: nosniff`, matching `public/_headers`.
 
-## Appwrite backup
+## The Appwrite copy
 
-Every owner photo keeps a 1200px JPEG quality-85 copy in the existing Appwrite
-bucket, created with `ownerPermissions(ownerId, isPublic)` — the same helper the
-browser uses (`src/lib/permissions.ts`), so backup files carry byte-identical
-permissions to everything else in the bucket. `node-appwrite` is already a
-devDependency of the root project.
+Every owner photo keeps its 1200px copy and its `photos` row in Appwrite,
+produced by the studio's existing upload path with no changes at all. That copy
+is both the disaster-recovery backup and the fallback the site renders from when
+the home server is unreachable.
 
-1200px at q85 is chosen to match what `pica` produces today, so fallback
-rendering is visually identical to current production rather than a visible
-downgrade.
+Because it is the current path rather than a re-encode, fallback rendering is
+byte-for-byte what production serves today — not an approximation of it.
 
-**The backup push is best-effort.** If Appwrite is unreachable or rejects the
-write, ingest still succeeds; `backed_up_at` stays null and the reconciliation
-pass retries with backoff. The alternative — failing the publish — would mean
-needing *both* backends up to publish anything, which is worse than either
-alone.
-
-The Appwrite API key is server-side only, held in `origin/.env`, and never
-reaches a browser. This is the same rule `src/lib/config.ts` states for
-`VITE_`-prefixed variables.
+**The origin never writes to Appwrite.** It holds no key that could create,
+modify, or delete anything there. Its only Appwrite credential is a read-only
+key used by the reconciliation pass, described below.
 
 ## Visibility cascade
 
@@ -431,36 +469,61 @@ reaches a browser. This is the same rule `src/lib/config.ts` states for
 
 This is the highest-risk operation in the design, because a mistake reopens the
 "private galleries are actually public" gap that `docs/appwrite-backend.md`
-documents closing. The cascade now spans three systems, and must be applied in
-an order where no window exists in which a private photo is publicly fetchable:
+documents closing.
 
-Going **public → private**:
+As with ingest, the **studio orchestrates both sides**:
+`updateGalleryVisibility()` keeps doing exactly what it does now against
+Appwrite, and gains one additional call to the origin. Neither backend reaches
+into the other.
 
-1. Move `public/<photo_id>/` to `staging/<photo_id>/` for every photo.
-   Serving stops the instant the rename completes.
-2. Update the Appwrite file permissions via `storage.updateFile`.
-3. Update `photo.is_public` and `gallery.is_public`.
-4. Append a `visibility_event` row per photo.
+Going **public → private**, the origin's own half is:
 
-Going **private → public**, the same steps in reverse order — permissions and
-rows first, files exposed last.
+1. Move `public/<photo_id>/` to `staging/<photo_id>/` for every photo, which
+   also removes the original's hardlink. Serving stops the instant the rename
+   completes.
+2. Update `photo.is_public` and `gallery.is_public`.
+3. Append a `visibility_event` row per photo.
+4. Issue a Cloudflare cache purge for the affected paths.
 
-The rule in both directions: **the public artefact is created last and removed
-first.** Appwrite's edge cache is not purged, but the file itself is
-permission-checked on every request, so a cached URL stops working. Cloudflare
-caches derivatives aggressively, so `PATCH` also issues a cache purge for the
-affected paths; the directory rename is the authority, and the purge is an
-optimisation, not the control.
+Going **private → public**, the same steps in reverse — rows first, files
+exposed last. The rule in both directions: **the public artefact is created last
+and removed first.** The directory rename is the authority; the cache purge is
+an optimisation, not the control.
+
+The studio must treat a failed origin call as a **failed operation** and surface
+it, not swallow it. Going private is the direction that matters: Appwrite may
+have been locked down while the derivatives are still being served.
+
+### Why the origin still holds a read-only key
+
+Removing the write key costs something real, and it should be named. The origin
+can no longer independently discover that a gallery went private — the browser
+is the only messenger, and a browser that is closed mid-cascade never delivers
+the message.
+
+So the origin keeps a **read-only** Appwrite key, used by nothing on the request
+path and only by the reconciliation pass, to compare each photo's stored
+`is_public` against the truth in Appwrite. On disagreement it **fails closed**:
+the photo is moved to `staging/` and the discrepancy logged loudly. A read key
+cannot create, modify, or delete anything, so this restores the safety net
+without restoring the blast radius.
+
+This project's own documentation is the argument for it — privacy here is
+"enforced by Appwrite permissions, not by the client hiding things", and a
+cascade that depends on one browser call completing is exactly the client-side
+enforcement that posture rejects.
 
 ## Deletion
 
 `DELETE /v1/photo/:id` removes, in order: the served derivatives and the
-original's hardlink, the staging directory, the Appwrite file, the archived
-original, then the rows (cascading to
-`derivative`, `exif`, `visibility_event`). A failure to delete the Appwrite file
-is logged and skipped rather than aborting, matching the existing reasoning in
-`deletePhoto` — an orphaned file wastes space, but a row pointing at a deleted
-file renders as a broken image.
+original's hardlink, the staging directory, the archived original, then the rows
+(cascading to `derivative`, `exif`, `visibility_event`).
+
+The Appwrite file and row are **not** touched here — `deletePhoto` and
+`deleteGallery` already remove them from the browser, and the origin has no key
+to do so. As with ingest and the visibility cascade, the studio calls both
+sides. An origin call that fails leaves orphaned files at home, which the
+reconciliation pass detects against Appwrite and quarantines.
 
 ## Reconciliation
 
@@ -469,8 +532,6 @@ partial failure above, which is why no failure path needs its own rollback:
 
 - `photo` rows with `ladder_ready = false` — re-run the transcode. Covers a
   crash mid-encode.
-- `photo` rows with `backed_up_at is null` — retry the Appwrite push with
-  exponential backoff.
 - Files in `originals/` with no `photo` row — log and quarantine. Never deleted
   automatically; an unreferenced original is still the only copy of a photograph.
 - `derivative` rows whose file is missing, and files with no row — re-derive.
@@ -478,8 +539,12 @@ partial failure above, which is why no failure path needs its own rollback:
   contrary to `is_public` — relink or unlink to match the database. The same
   security check as the derivative directory, applied to the native file.
 - Photos whose `is_public` disagrees with the directory they occupy — move them
-  to match the database, and log loudly. This one is a security check, not
-  housekeeping.
+  to match the database, and log loudly. A security check, not housekeeping.
+- Photos whose `is_public` disagrees with their Appwrite row, read through the
+  read-only key — **fail closed**: move to `staging/`, log loudly. This is the
+  net under a visibility cascade whose browser half never completed.
+- Photos whose Appwrite row no longer exists — quarantine the local artefacts.
+  Catches a delete whose origin half never landed.
 
 ## Configuration
 
@@ -496,7 +561,7 @@ misconfiguration fails at startup rather than on the first upload.
 | `ALLOWED_ORIGINS` | Comma-separated CORS allowlist. |
 | `APPWRITE_ENDPOINT` | Appwrite Cloud endpoint. |
 | `APPWRITE_PROJECT_ID` | Project id. |
-| `APPWRITE_API_KEY` | Server key, storage scopes only. Never client-side. |
+| `APPWRITE_API_KEY` | **Read-only** key (`documents.read`, `files.read`). Used solely by the reconciliation pass. Never client-side. |
 | `APPWRITE_BUCKET_ID` | The existing bucket. |
 | `MAX_UPLOAD_BYTES` | Defaults to 104857600 (100MB). |
 
@@ -523,7 +588,9 @@ credential published to every visitor.
 | `origin` crashed, caddy up | Already-generated derivatives keep serving. Ingest returns 502. Reconciliation repairs on restart. |
 | Postgres down | `origin` fails its health check and refuses ingest. Static serving is unaffected. |
 | Transcode fails for one format | Other formats still land; `ladder_ready` stays false and no manifest is written, so the photo falls back rather than serving a partial ladder. Reconciliation retries. |
-| Appwrite unreachable at ingest | Ingest succeeds; `backed_up_at` null; retried later. |
+| Appwrite unreachable at publish | The existing rollback runs and the publish fails, exactly as today. The origin is never called, so nothing is orphaned. |
+| Origin unreachable at publish | Appwrite is already consistent. The photo publishes and renders at today's quality with no full-res tier, and can be sent to the origin later. |
+| Origin unreachable during a visibility change | The studio reports failure. Reconciliation fails the photo closed at its next pass, so derivatives stop being served even if nobody retries. |
 | Upload exceeds 100MB | `413` with the limit named. |
 | Same file uploaded twice | Deduplicated on `(owner_id, sha256)`; returns the existing photo. |
 | Fullscreen original slow or failed | The viewer keeps the top ladder rung painted underneath it; the swap simply never happens, and nothing looks broken. |
@@ -547,7 +614,12 @@ credential published to every visitor.
   the first upload: the archive is never rewritten afterwards, so a later change
   of mind cannot reach photos already stored.
 - **Identity from Appwrite, never from the request body.**
-- **Server key stays server-side**, with storage scopes only.
+- **The origin cannot write to Appwrite.** Its only credential there is
+  read-only, used off the request path by reconciliation. A compromised home
+  server cannot alter or delete anything in Appwrite.
+- **Owner photos are permissioned by the same code as everyone else's** —
+  `ownerPermissions()` in the browser, under the owner's own session — rather
+  than by a second implementation running under a key that bypasses permissions.
 - **CORS allowlisted**, not `*`.
 - **Tunnel, not port-forwarding.** No inbound ports; home IP not exposed.
 - Cloudflare's free plan discourages serving large volumes of non-HTML media.
@@ -586,8 +658,10 @@ mocked at the module boundary):
   archived file under `originals/` is still present and byte-identical.
 - A crash mid-transcode (simulated by killing the task) leaves `ladder_ready`
   false and no manifest; reconciliation completes it on the next pass.
-- A failed Appwrite push leaves `backed_up_at` null and ingest still returns 201;
-  reconciliation retries and sets it.
+- Reconciliation reading a private Appwrite row for a photo the origin has
+  marked public moves it to `staging/` and logs — the fail-closed path.
+- Reconciliation finding no Appwrite row for a photo quarantines its local
+  artefacts rather than deleting them.
 - Deleting a photo removes derivatives, original, and rows.
 
 **Manual verification** closing the sub-project, since the service is not yet
@@ -621,6 +695,8 @@ wired to the frontend:
 | Backup is the 1200px copy | Backing up originals to Appwrite | Cloud storage cost for a copy nothing reads; archive durability belongs to local 3-2-1 backup. |
 | Best-effort backup | Failing ingest when Appwrite is down | Otherwise publishing requires both backends up. |
 | Appwrite JWT | Shared secret in the bundle | A secret shipped to every visitor is not a secret. |
+| Studio writes to Appwrite and origin independently | Origin relays a copy to Appwrite | Removes the Appwrite write key from the home server entirely, and keeps one implementation of `ownerPermissions()`. Appwrite-first ordering means an origin failure can orphan nothing. |
+| Origin keeps a read-only Appwrite key | No Appwrite credential at all | Without it the origin cannot detect a visibility cascade whose browser half never completed, leaving private photos served. A read key restores the safety net with no write blast radius. |
 | Native original at fullscreen | Top ladder rung everywhere | Fullscreen is the one view whose point is the exact capture. Amends the earlier "capped ladder only" decision; edge caching absorbs the repeat bandwidth. |
 | Native original keeps its EXIF | Stripping GPS from the archive at ingest | "Native" means the file as captured. Recorded as an accepted risk, reversible only before the first upload. |
 | Hardlink into `public/` | Copying the original, or a caddy route into `originals/` | No duplicated disk, and privacy stays a directory question rather than a routing rule that could be got wrong. |
