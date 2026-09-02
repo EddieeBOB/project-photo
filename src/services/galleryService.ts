@@ -5,8 +5,8 @@ import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId } from
 import { ownerPermissions } from '../lib/permissions';
 import { fileToThumbhash } from '../lib/thumbhash';
 import type { Gallery, Photo } from '../types/gallery';
-import { ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_BYTES, UPLOAD_MAX_WIDTH, resizeImage } from './imageProcessing';
-import { retrieveImageURL } from './imageUrls';
+import { ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_BYTES, UPLOAD_MAX_WIDTH, fileNameForType, resizeImage } from './imageProcessing';
+import { retrieveImageURL, retrieveOriginalImageURL } from './imageUrls';
 
 /**
  * Reads and writes for exhibitions: publishing a draft, deleting, and changing
@@ -29,7 +29,7 @@ const PHOTO_PAGE_SIZE = 100;
  *
  * @returns the storage file id
  */
-async function uploadImage(file: File | Blob, ownerId: string, isPublic: boolean): Promise<string> {
+async function uploadImage(file: File, ownerId: string, isPublic: boolean): Promise<string> {
     try {
         // The bucket enforces these server-side too; failing here just saves a
         // pointless round trip with a large body.
@@ -40,14 +40,12 @@ async function uploadImage(file: File | Blob, ownerId: string, isPublic: boolean
             throw new Error('File exceeds the maximum allowed size.');
         }
 
-        let fileToUpload: File;
-        if (file instanceof File) {
-            const resized = await resizeImage(file, UPLOAD_MAX_WIDTH);
-            fileToUpload = new File([resized], file.name, { type: file.type || 'image/jpeg' });
-        } else {
-            // Already a Blob (pre-resized); wrap it so the SDK gets a filename.
-            fileToUpload = new File([file], 'image.jpg', { type: file.type || 'image/jpeg' });
-        }
+        // The resize re-encodes to WebP, so the picked file's type no longer
+        // describes the bytes being uploaded. The blob's own type does, and it
+        // also covers the browser that fell back to PNG instead.
+        const resized = await resizeImage(file, UPLOAD_MAX_WIDTH);
+        const uploadType = resized.type || 'image/webp';
+        const fileToUpload = new File([resized], fileNameForType(file.name, uploadType), { type: uploadType });
 
         const fileId = ID.unique();
         await storage.createFile({
@@ -374,7 +372,10 @@ export function mapGalleryToCarousel(fetchedGallery: FetchedGallery, userId: str
         isPublic: fetchedGallery.isPublic ?? false,
         photos: fetchedGallery.photos.map((photo) => ({
             id: photo.$id,
-            src: retrieveImageURL(photo.imageId, 1200),
+            // The stored file is already downscaled to UPLOAD_MAX_WIDTH, so a
+            // preview at that width would only re-encode it: same pixels, a
+            // second round of compression artefacts, and a billed transform.
+            src: retrieveOriginalImageURL(photo.imageId),
             title: photo.title || '',
             description: photo.description || '',
             // Null for photos uploaded before the column existed; the carousel

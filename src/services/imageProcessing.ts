@@ -20,6 +20,27 @@ export const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 export const UPLOAD_MAX_WIDTH = 1200;
 
 /**
+ * Every upload is re-encoded to WebP, whatever was picked. One output format
+ * means one set of behaviours to reason about: it is lossy, it keeps an alpha
+ * channel, and it is smaller than JPEG or PNG at the same quality. It also
+ * sidesteps the fact that no browser canvas can write GIF or AVIF at all.
+ *
+ * A resize reduces an animated GIF to its first frame regardless; what matters
+ * is that the stored file is labelled as what it really is.
+ */
+const ENCODE_TYPE = 'image/webp';
+
+/**
+ * File extension for each type an encode can produce. WebP is the intended
+ * output; PNG is what a browser too old to write WebP falls back to.
+ */
+const EXTENSION_BY_TYPE: Record<string, string> = {
+    'image/webp': 'webp',
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+};
+
+/**
  * Prepares picked files for the studio editor: drops anything that isn't a
  * supported image, builds a local preview URL, and pre-fills each photo's
  * title from the filename and its settings from EXIF.
@@ -45,6 +66,16 @@ export async function processFiles(files: File[]): Promise<CarouselPhoto[]> {
 /** "seascape.jpg" -> "seascape". Names without an extension pass through. */
 function stripFileExtension(fileName: string): string {
     return fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+}
+
+/**
+ * Renames a file so its extension matches the bytes it now holds, leaving the
+ * name itself alone: "seascape.gif" re-encoded as WebP becomes "seascape.webp".
+ * Unknown types pass through untouched.
+ */
+export function fileNameForType(fileName: string, type: string): string {
+    const extension = EXTENSION_BY_TYPE[type];
+    return extension ? `${stripFileExtension(fileName)}.${extension}` : fileName;
 }
 
 /** Shutter speed as photographers write it: "1/125" fast, "2s" long. */
@@ -102,10 +133,12 @@ function getResizer() {
 }
 
 /**
- * Downscales an image to at most `width`, preserving its aspect ratio.
- * Images already narrower than `width` are re-encoded but not upscaled.
+ * Downscales an image to at most `width`, preserving its aspect ratio, and
+ * re-encodes it as WebP. Images already narrower than `width` are re-encoded
+ * but not upscaled.
  *
- * @returns the resized image as a Blob of the same type as the input
+ * @returns the resized image as a Blob — WebP, or PNG on a browser that cannot
+ *          encode WebP. Read its `type` rather than assuming either.
  */
 export async function resizeImage(file: File, width: number): Promise<Blob> {
     const resizer = await getResizer();
@@ -129,9 +162,10 @@ export async function resizeImage(file: File, width: number): Promise<Blob> {
                 canvas.width = targetWidth;
                 canvas.height = targetHeight;
 
-                // JPEG has no alpha channel; skipping it is measurably faster.
+                // A JPEG source has no alpha channel to carry through the
+                // resize, and skipping it is measurably faster.
                 await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as Parameters<typeof resizer.resize>[2]);
-                resolve(await resizer.toBlob(canvas, file.type || 'image/jpeg', 0.85));
+                resolve(await resizer.toBlob(canvas, ENCODE_TYPE, 0.85));
             } catch (error) {
                 reject(error);
             } finally {

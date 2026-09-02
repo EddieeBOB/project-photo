@@ -200,8 +200,6 @@ All project docs live in **[docs/](./docs/README.md)**:
 - [Appwrite backend & security model](./docs/appwrite-backend.md)
 - [`login-resolver` function](./functions/login-resolver/README.md)
 - [Testing overview](./tests/README.md) · [2FA E2E](./tests/e2e/2fa/README.md)
-- [Design system - Luminous Editorial](./docs/design/luminous-editorial.md) · [Auth patterns](./docs/design/auth-patterns.md)
-
 ---
 
 ## Roadmap

@@ -21,6 +21,19 @@ export function retrieveImageURL(fileId: string, width: number): string {
 }
 
 /**
+ * Serves a stored file exactly as it was uploaded, with no transformation.
+ *
+ * Use this wherever the bucket already holds the size being displayed: asking
+ * for a preview at the width the file is stored at resizes nothing, and only
+ * costs a second lossy encode on top of the first.
+ *
+ * @param fileId - Storage file id
+ */
+export function retrieveOriginalImageURL(fileId: string): string {
+    return storage.getFileView({ bucketId, fileId });
+}
+
+/**
  * Decorative photography shipped with the product rather than uploaded by a
  * user. The ids are fixed files in the bucket.
  */
