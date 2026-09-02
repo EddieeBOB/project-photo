@@ -318,7 +318,6 @@ the origin has no way to discover that on its own.
 | `galleryId` | uuid | Must exist and be owned by the caller. |
 | `appwriteRowId` | string | The `photos` row the studio just created. |
 | `appwriteFileId` | string | The 1200px file the studio just uploaded. |
-| `isPublic` | bool | Mirrors the gallery's visibility at publish time. |
 | `title` | string | Optional, defaults to `''`. |
 | `description` | string | Optional, defaults to `''`. |
 | `position` | int | Optional, defaults to `0`. |
@@ -326,9 +325,9 @@ the origin has no way to discover that on its own.
 
 `appwriteRowId` and `appwriteFileId` are **correlation pointers only**. They are
 client-supplied and therefore untrusted: nothing about authorization or
-visibility is decided from them. Identity still comes from the verified JWT, and
-`isPublic` is treated as a hint that the reconciliation pass independently
-verifies (see [Reconciliation](#reconciliation)).
+visibility is decided from them. Identity comes from the verified JWT, and
+visibility is read from the origin's own `gallery` row — never from the request
+— then independently re-verified against Appwrite by the reconciliation pass.
 
 Request body cap: **100MB**, matching Cloudflare's proxied-request limit. Larger
 files are rejected with `413` and a message naming the limit, rather than being
@@ -561,6 +560,7 @@ misconfiguration fails at startup rather than on the first upload.
 | `ALLOWED_ORIGINS` | Comma-separated CORS allowlist. |
 | `APPWRITE_ENDPOINT` | Appwrite Cloud endpoint. |
 | `APPWRITE_PROJECT_ID` | Project id. |
+| `APPWRITE_DATABASE_ID` | Database holding the `photos` table, read by reconciliation. |
 | `APPWRITE_API_KEY` | **Read-only** key (`documents.read`, `files.read`). Used solely by the reconciliation pass. Never client-side. |
 | `APPWRITE_BUCKET_ID` | The existing bucket. |
 | `MAX_UPLOAD_BYTES` | Defaults to 104857600 (100MB). |
