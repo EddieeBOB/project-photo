@@ -41,3 +41,6 @@ tests/e2e/2fa/.otp/
 
 # Local self-hosted Appwrite stack (installer output; .env holds secret keys)
 /appwrite/
+
+# C2PA signing identity — the private key never leaves the machine that made it
+functions/sign-photo/.certs/
