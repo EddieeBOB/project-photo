@@ -44,3 +44,7 @@ tests/e2e/2fa/.otp/
 
 # C2PA signing identity — the private key never leaves the machine that made it
 functions/sign-photo/.certs/
+functions/sign-photo-rs/.certs/
+
+# Rust build output
+functions/sign-photo-rs/target/

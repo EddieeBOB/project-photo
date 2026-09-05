@@ -131,7 +131,7 @@ that survives stripping, if that ever becomes worth the complexity.
 
 `uploadImage()` in [`src/services/galleryService.ts`](../../src/services/galleryService.ts),
 once per photo, in place of a direct `storage.createFile`. The client reads the
-function id from `VITE_APPWRITE_SIGN_FN_ID`.
+function id from `VITE_APPWRITE_SIGN_PHOTO_FN_ID`.
 
 There is no unsigned path. This function *is* the upload, so a failure here
 fails the publish rather than quietly storing a photo without provenance.

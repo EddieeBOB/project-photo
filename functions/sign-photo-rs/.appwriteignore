@@ -1,0 +1,8 @@
+# The signing key. Anything holding it can mint provenance in your name, and a
+# deployment bundle is not a secret store — the key belongs in a function
+# variable, which is why it is base64'd into one.
+.certs
+.env
+
+# 1.1GB of local build output, compiled for macOS. Appwrite builds its own.
+target

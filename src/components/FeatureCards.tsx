@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 
-import { colors, typography } from '../theme';
+import { colors, SecondaryButton, typography } from '../theme';
 import { GlobeIcon, HDIcon, UsersIcon } from './icons';
+import VerifyPhotoDialog from './VerifyPhotoDialog';
 
 /** Lifts on hover, for anyone who hasn't asked for reduced motion. */
 const CardContainer = styled(Box)({
@@ -40,8 +42,11 @@ const IconWrapper = styled(Box)({
 const features = [
     {
         icon: <GlobeIcon />,
-        title: 'Open Ecosystem',
-        description: 'If you have a story to tell through your lens, you belong here.',
+        title: 'Signed Photos',
+        description: 'All photos are signed with a cryptographic signature that proves they were uploaded by you, and not tampered with.',
+        // The only card with an action: a signature is a claim, and a claim
+        // nobody can check is just a sentence on a landing page.
+        action: 'Verify a photo',
     },
     {
         icon: <HDIcon />,
@@ -57,6 +62,8 @@ const features = [
 
 /** The three-up pitch below the hero on the landing page. */
 export default function FeatureCards() {
+    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+
     return (
         <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: colors.surfaceBright }}>
             <Container maxWidth="lg" sx={{ px: { xs: 3, md: 6 } }}>
@@ -132,11 +139,22 @@ export default function FeatureCards() {
                                 >
                                     {feature.description}
                                 </Typography>
+                                {feature.action && (
+                                    // `mt: auto` pins it to the bottom of the card, so it
+                                    // lines up whatever height the descriptions settle at.
+                                    <Box sx={{ mt: 'auto', pt: 3 }}>
+                                        <SecondaryButton onClick={() => setIsVerifyOpen(true)}>
+                                            {feature.action}
+                                        </SecondaryButton>
+                                    </Box>
+                                )}
                             </CardContainer>
                         </Grid>
                     ))}
                 </Grid>
             </Container>
+
+            <VerifyPhotoDialog open={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} />
         </Box>
     );
 }

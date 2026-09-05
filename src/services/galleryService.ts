@@ -1,7 +1,7 @@
-import { ID, Query, type Models } from 'appwrite';
+import { Functions, ID, Query, type Models } from 'appwrite';
 
-import { account, tablesDB, storage } from '../lib/appwrite';
-import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId } from '../lib/config';
+import { account, client, tablesDB, storage } from '../lib/appwrite';
+import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId, signPhotoFunctionId } from '../lib/config';
 import { ownerPermissions } from '../lib/permissions';
 import { fileToThumbhash } from '../lib/thumbhash';
 import type { Gallery, Photo } from '../types/gallery';
@@ -20,16 +20,37 @@ import { retrieveImageURL, retrieveOriginalImageURL } from './imageUrls';
 /** How many photo rows to pull per request when walking a gallery. */
 const PHOTO_PAGE_SIZE = 100;
 
+const functions = new Functions(client);
+
 /* ------------------------------------------------------------------ */
 /* Publishing                                                          */
 /* ------------------------------------------------------------------ */
 
+/** Base64 payload of a blob, without the `data:` prefix a data URL carries. */
+function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+    });
+}
+
 /**
- * Uploads one image to the bucket, downscaling it first.
+ * Downscales one image and has the `sign-photo` function store it.
+ *
+ * The browser does not write this file itself. A C2PA manifest hashes the bytes
+ * it is embedded in, so signing has to happen before the bucket write — and it
+ * has to happen server-side, because a signing key shipped to the browser is a
+ * key everyone has. The function therefore does the upload, and the id it
+ * returns is the one the `photos` row references.
+ *
+ * There is deliberately no unsigned path: if signing fails nothing was stored,
+ * so the publish fails rather than quietly keeping a photo without provenance.
  *
  * @returns the storage file id
  */
-async function uploadImage(file: File, ownerId: string, isPublic: boolean): Promise<string> {
+async function uploadImage(file: File, isPublic: boolean, creator: string): Promise<string> {
     try {
         // The bucket enforces these server-side too; failing here just saves a
         // pointless round trip with a large body.
@@ -41,20 +62,27 @@ async function uploadImage(file: File, ownerId: string, isPublic: boolean): Prom
         }
 
         // The resize re-encodes to WebP, so the picked file's type no longer
-        // describes the bytes being uploaded. The blob's own type does, and it
-        // also covers the browser that fell back to PNG instead.
+        // describes the bytes being sent. The blob's own type does, and it also
+        // covers the browser that fell back to PNG instead.
         const resized = await resizeImage(file, UPLOAD_MAX_WIDTH);
         const uploadType = resized.type || 'image/webp';
-        const fileToUpload = new File([resized], fileNameForType(file.name, uploadType), { type: uploadType });
 
-        const fileId = ID.unique();
-        await storage.createFile({
-            bucketId,
-            fileId,
-            file: fileToUpload,
-            permissions: ownerPermissions(ownerId, isPublic),
+        const execution = await functions.createExecution({
+            functionId: signPhotoFunctionId,
+            body: JSON.stringify({
+                image: await blobToBase64(resized),
+                mimeType: uploadType,
+                name: fileNameForType(file.name, uploadType),
+                isPublic,
+                creator,
+            }),
         });
-        return fileId;
+
+        const result = JSON.parse(execution.responseBody || '{}');
+        if (execution.responseStatusCode !== 200 || !result.fileId) {
+            throw new Error(result.error || 'Could not sign and store the photo.');
+        }
+        return result.fileId;
     } catch (error) {
         console.error('Error uploading and saving photo:', error);
         throw error;
@@ -72,10 +100,11 @@ async function createImage(
     galleryId: string,
     ownerId: string,
     isPublic: boolean,
+    creator: string,
 ): Promise<string | null> {
     if (!photo.file) return null;
 
-    const imageId = await uploadImage(photo.file, ownerId, isPublic);
+    const imageId = await uploadImage(photo.file, isPublic, creator);
 
     try {
         // Hashed from the original rather than the upload: ThumbHash works from a
@@ -155,7 +184,9 @@ export async function createGallery(
     // Derive the owner from the authenticated session rather than trusting a
     // client-supplied id. This prevents a tampered client from attributing a
     // gallery to another user.
-    const { $id: ownerId } = await account.get();
+    // The display name rides along as the manifest's creator, so it is read
+    // here rather than once per photo.
+    const { $id: ownerId, name: creator } = await account.get();
 
     const galleryId = ID.unique();
     const photoRowIds: string[] = [];
@@ -178,7 +209,7 @@ export async function createGallery(
             const photoRowId = ID.unique();
             photoRowIds.push(photoRowId);
 
-            const imageId = await createImage(photo, photoRowId, galleryId, ownerId, isPublic);
+            const imageId = await createImage(photo, photoRowId, galleryId, ownerId, isPublic, creator);
             if (imageId) uploadedFileIds.push(imageId);
 
             onProgress?.(index + 1, gallery.photos.length);

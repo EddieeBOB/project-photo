@@ -17,3 +17,10 @@ export const USERS_TABLE = 'users';
 
 /** The Appwrite Function that resolves a username to its account email. */
 export const loginResolverFunctionId: string = import.meta.env.VITE_APPWRITE_LOGIN_FN_ID;
+
+/**
+ * The Appwrite Function that signs a photo with a C2PA provenance manifest and
+ * stores it. It performs the upload itself — the signing key must never reach
+ * the browser, and signing has to happen before the bytes land in the bucket.
+ */
+export const signPhotoFunctionId: string = import.meta.env.VITE_APPWRITE_SIGN_PHOTO_FN_ID;
