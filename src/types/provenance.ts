@@ -18,12 +18,12 @@ export type ProvenanceState =
 export interface Provenance {
     state: ProvenanceState;
     /**
-     * When it was registered, ISO-8601, from the server clock.
+     * When it was registered, ISO-8601 — the row's own `$createdAt`.
      *
-     * The only detail a row carries. The registry records what the server
-     * verified for itself and nothing the uploader asserted, so it can say when
-     * these bytes were published here but not who by — that lives on the photo
-     * and gallery rows, which are the authority for it.
+     * The only detail a row carries, and not a stored column: Appwrite stamps
+     * it, so it is not something the uploader or the function could assert. The
+     * registry can say when these bytes were published here but not who by —
+     * that lives on the photo and gallery rows, which are the authority for it.
      */
     registeredAt?: string;
 }

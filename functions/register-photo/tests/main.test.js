@@ -21,8 +21,8 @@ const DIGEST = sha256(BYTES);
 const env = {
     APPWRITE_FUNCTION_API_ENDPOINT: 'https://appwrite.test/v1',
     APPWRITE_FUNCTION_PROJECT_ID: 'project',
-    APPWRITE_DATABASE_ID: 'db',
-    APPWRITE_BUCKET_ID: 'photos',
+    VITE_APPWRITE_DATABASE_ID: 'db',
+    VITE_APPWRITE_BUCKET_ID: 'photos',
 };
 
 /** An Appwrite SDK rejection, which the handler branches on by `.code`. */
@@ -96,7 +96,7 @@ function backend({ files = {}, rows = {}, failLookupWith, failDownloadWith } = {
     };
     Databases.prototype.createDocument = async (_db, _table, rowId, data, permissions) => {
         if (rows[rowId]) throw appwriteError(409, 'Document with the requested ID already exists.');
-        rows[rowId] = { $id: rowId, $permissions: permissions, ...data };
+        rows[rowId] = { $id: rowId, $createdAt: new Date().toISOString(), $permissions: permissions, ...data };
         return rows[rowId];
     };
     Databases.prototype.getDocument = async (_db, _table, rowId) => {
@@ -239,13 +239,13 @@ test('rejects non-string file ids instead of coercing them into lookups', async 
 });
 
 test('validates the request before checking server configuration', async () => {
-    const sent = await invoke(request({ action: 'unknown' }), { APPWRITE_DATABASE_ID: '' });
+    const sent = await invoke(request({ action: 'unknown' }), { VITE_APPWRITE_DATABASE_ID: '' });
     assert.equal(sent.status, 400);
     assert.equal(sent.body.error, 'Unknown action.');
 });
 
 test('reports missing server configuration for a valid request', async () => {
-    const sent = await invoke(request(), { APPWRITE_DATABASE_ID: '' });
+    const sent = await invoke(request(), { VITE_APPWRITE_DATABASE_ID: '' });
     assert.equal(sent.status, 500);
     assert.equal(sent.body.error, 'Registration is unavailable.');
 });
@@ -288,20 +288,22 @@ test('registers an owned file with the digest of its stored bytes', async (t) =>
     assert.equal(sent.body.sha256, DIGEST);
     assert.equal(fake.rows.file1.sha256, DIGEST);
     assert.equal(fake.rows.file1.imageId, 'file1');
-    // Server clock, never the client's.
-    assert.ok(!Number.isNaN(Date.parse(fake.rows.file1.registeredAt)));
+    // The registration time is Appwrite's row stamp, not a column written here.
+    assert.ok(!Number.isNaN(Date.parse(fake.rows.file1.$createdAt)));
 });
 
 test('stores nothing the caller said about the photo', async (t) => {
     const fake = backend({ files: { file1: PRIVATE_FILE } });
     t.after(fake.restore);
 
-    await invoke(request({ creator: 'Someone Else', title: 'Not mine' }));
+    // `registeredAt` among them: a caller must not be able to backdate a
+    // registration by supplying the field the row used to carry.
+    await invoke(request({ creator: 'Someone Else', title: 'Not mine', registeredAt: '1999-01-01T00:00:00.000Z' }));
 
     // The registry records only what the function verified for itself.
     assert.deepEqual(
         Object.keys(fake.rows.file1).filter((k) => !k.startsWith('$')).sort(),
-        ['imageId', 'registeredAt', 'sha256'],
+        ['imageId', 'sha256'],
     );
 });
 

@@ -44,11 +44,15 @@ export default async ({ req, res, error }) => {
     return res.json({ error: `At most ${MAX_VISIBILITY_BATCH} files per call.` }, 400);
   }
 
-  // Load the database and storage bucket configured for this function.
-  const databaseId = process.env.APPWRITE_DATABASE_ID;
-  const bucketId = process.env.APPWRITE_BUCKET_ID;
+  // Load the database and storage bucket configured for this function. These
+  // are the project-wide variables the site is built from, so the ids are set
+  // once and the browser and this function cannot drift apart. The `VITE_`
+  // prefix is the site's rule that a value is inlined into the browser bundle,
+  // which both of these already are — so nothing secret belongs under it.
+  const databaseId = process.env.VITE_APPWRITE_DATABASE_ID;
+  const bucketId = process.env.VITE_APPWRITE_BUCKET_ID;
   if (!databaseId || !bucketId) {
-    error('APPWRITE_DATABASE_ID and APPWRITE_BUCKET_ID must both be set');
+    error('VITE_APPWRITE_DATABASE_ID and VITE_APPWRITE_BUCKET_ID must both be set');
     return res.json({ error: 'Registration is unavailable.' }, 500);
   }
 
@@ -64,7 +68,7 @@ export default async ({ req, res, error }) => {
       databases: new Databases(admin),
       databaseId,
       bucketId,
-      tableId: process.env.APPWRITE_PROVENANCE_TABLE_ID || 'provenance',
+      tableId: process.env.VITE_APPWRITE_PROVENANCE_TABLE_ID || 'provenance',
       userId,
       error,
     });

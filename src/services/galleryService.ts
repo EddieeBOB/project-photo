@@ -52,15 +52,6 @@ const functions = new Functions(client);
  * @returns the storage file id
  */
 async function uploadImage(file: File, isPublic: boolean, ownerId: string): Promise<string> {
-    // Checked before the upload, not after: without it the first publish on a
-    // fresh deployment uploads the file, then fails on an opaque SDK error
-    // about an empty function id with nothing pointing at the missing variable.
-    if (!registerPhotoFunctionId) {
-        throw new Error(
-            'Photo registration is not configured: set VITE_APPWRITE_REGISTER_FN_ID to the register-photo function id.',
-        );
-    }
-
     // The bucket enforces these server-side too; failing here just saves a
     // pointless round trip with a large body.
     if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type)) {

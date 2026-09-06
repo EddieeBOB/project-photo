@@ -35,11 +35,14 @@ export function createRegistry({ storage, databases, bucketId, databaseId, table
     const digest = sha256(Buffer.from(bytes));
 
     try {
+      // No timestamp of our own: Appwrite stamps the row's `$createdAt`, which
+      // neither the caller nor this function can set, and which a re-registration
+      // leaves where it was.
       await databases.createDocument(
         databaseId,
         tableId,
         fileId,
-        { imageId: fileId, sha256: digest, registeredAt: new Date().toISOString() },
+        { imageId: fileId, sha256: digest },
         permissions,
       );
       return digest;

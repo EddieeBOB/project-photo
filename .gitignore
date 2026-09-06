@@ -31,6 +31,10 @@ dist-ssr
 /.local-context/
 /AGENTS.md
 
+# Local Codex MCP config generated from .vscode/mcp.json
+.codex
+.vscode
+
 # Appwrite config (contains project IDs / not for VCS)
 appwrite.config.json
 

@@ -52,7 +52,11 @@ export async function verifyFile(file: File): Promise<Provenance> {
 
         return {
             state: 'registered',
-            ...(row.registeredAt && { registeredAt: row.registeredAt }),
+            // Appwrite's own row stamp rather than a column the function wrote.
+            // `$createdAt` specifically: `$updatedAt` moves when a gallery is
+            // made private and the function re-permissions the row, which would
+            // report a visibility change as the registration date.
+            ...(row.$createdAt && { registeredAt: row.$createdAt }),
         };
     } catch (error) {
         console.warn('Could not check the provenance registry:', error);

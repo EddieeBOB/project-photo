@@ -89,20 +89,34 @@ overwritten — overwriting on collision would be a way to replace a hash.
 
 ## Configuration
 
-Function variables: `APPWRITE_DATABASE_ID`, `APPWRITE_BUCKET_ID`.
-`APPWRITE_PROVENANCE_TABLE_ID` is optional and defaults to `provenance`.
+Variables: `VITE_APPWRITE_DATABASE_ID`, `VITE_APPWRITE_BUCKET_ID`.
+`VITE_APPWRITE_PROVENANCE_TABLE_ID` is optional and defaults to `provenance`;
+the browser's matching name is the `PROVENANCE_TABLE` constant in
+`src/lib/config.ts`, not a variable, so an override has to be made in both.
+
+The `VITE_` prefix is deliberate. These are the project-wide variables the site
+is built from, so the database and bucket ids are configured once rather than
+copied onto each function, where the two copies could drift. The prefix is also
+a warning: the site inlines every `VITE_` value into the browser bundle, so a
+secret must never be added under one of these names. This function needs no
+secret — its API key is the per-execution one Appwrite injects.
 
 Dynamic API key scopes: `files.read`, `documents.read`, `documents.write`.
 
 ### The `provenance` table
 
-| column         | type       | notes                                       |
-| -------------- | ---------- | ------------------------------------------- |
-| `sha256`       | Varchar 64 | required                                    |
-| `imageId`      | Varchar 36 | required — the storage file this describes  |
-| `registeredAt` | Datetime   | required — server clock, never the client's |
+| column    | type       | notes                                      |
+| --------- | ---------- | ------------------------------------------ |
+| `sha256`  | Varchar 64 | required                                   |
+| `imageId` | Varchar 36 | required — the storage file this describes |
 
 The row id is the `imageId`, which is what makes registration idempotent.
+
+There is no timestamp column. Appwrite stamps `$createdAt` on the row, which is
+a stronger answer than one this function writes: neither the caller nor the
+function can set it, and re-registering an existing file leaves it alone. Read
+`$createdAt` and not `$updatedAt` — `visibility` re-permissions rows, so
+`$updatedAt` reports a gallery going private as a registration date.
 
 `sha256` must be a **Varchar**, not a Text type: Text columns cannot take a plain
 key index in MariaDB, and the index below is not optional. It must also not be

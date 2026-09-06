@@ -33,7 +33,7 @@ describe('verifyFile', () => {
 
     it('reports a digest the registry knows as registered', async () => {
         listRows.mockResolvedValue({
-            rows: [{ creator: 'Eddie Lam', title: 'Dusk', registeredAt: '2026-09-04T10:00:00.000Z' }],
+            rows: [{ creator: 'Eddie Lam', title: 'Dusk', $createdAt: '2026-09-04T10:00:00.000Z' }],
         });
 
         expect(await verifyFile(new File(['abc'], 'a.webp', { type: 'image/webp' }))).toEqual({
@@ -64,7 +64,7 @@ describe('verifyFile', () => {
     });
 
     it('omits fields the row does not carry', async () => {
-        listRows.mockResolvedValue({ rows: [{ registeredAt: '2026-09-04T10:00:00.000Z' }] });
+        listRows.mockResolvedValue({ rows: [{ $createdAt: '2026-09-04T10:00:00.000Z' }] });
         expect(await verifyFile(new File(['abc'], 'a.webp'))).toEqual({
             state: 'registered',
             registeredAt: '2026-09-04T10:00:00.000Z',
