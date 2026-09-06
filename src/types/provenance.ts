@@ -1,31 +1,29 @@
 /**
- * What a photo's Content Credentials say about it.
+ * What the provenance registry knows about a photo.
  *
- * `trusted` and `signed` are both intact signatures over unmodified bytes; they
- * differ only in whether the signing certificate chains to a recognised
- * authority. A self-signed or privately-issued certificate — which is what this
- * project uses until it buys a trust-listed one — reads as `signed`.
+ * There is no `modified` state, and its absence is deliberate. A registry
+ * records the hash of exactly one sequence of bytes; a photo that has been
+ * edited, re-encoded, or re-saved simply hashes to something else and is not
+ * found. That is indistinguishable from a photo nobody ever registered, so
+ * both read as `unregistered` rather than pretending to tell them apart.
  */
 export type ProvenanceState =
-    /** Signed, unmodified, and issued by a recognised certificate authority. */
-    | 'trusted'
-    /** Signed and unmodified, but the issuer is not on any trust list. */
-    | 'signed'
-    /** A manifest is present but no longer matches the bytes it covers. */
-    | 'modified'
-    /** No Content Credentials at all — the ordinary case for most photos. */
-    | 'none'
-    /** The file could not be read. */
+    /** The digest is in the registry: these exact bytes were published here. */
+    | 'registered'
+    /** No row for this digest — never registered, or altered since. */
+    | 'unregistered'
+    /** The registry could not be reached. */
     | 'error';
 
 export interface Provenance {
     state: ProvenanceState;
-    /** Who the manifest names as the author, when it carries a CreativeWork assertion. */
-    creator?: string;
-    /** The application that generated the claim, e.g. "photoframes.me". */
-    signedBy?: string;
-    /** The certificate's subject — who the signature actually belongs to. */
-    issuer?: string;
-    /** When it was signed, ISO-8601, if the manifest recorded a time. */
-    signedAt?: string;
+    /**
+     * When it was registered, ISO-8601, from the server clock.
+     *
+     * The only detail a row carries. The registry records what the server
+     * verified for itself and nothing the uploader asserted, so it can say when
+     * these bytes were published here but not who by — that lives on the photo
+     * and gallery rows, which are the authority for it.
+     */
+    registeredAt?: string;
 }

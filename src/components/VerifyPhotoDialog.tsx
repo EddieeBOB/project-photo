@@ -16,34 +16,27 @@ interface VerifyPhotoDialogProps {
 
 /** Headline and explanation for each outcome, in the visitor's terms. */
 const RESULTS: Record<ProvenanceState, { headline: string; detail: string }> = {
-    trusted: {
-        headline: 'Signed and verified',
-        detail: 'The signature is intact and its certificate is issued by a recognised authority. This photo has not been altered since it was signed.',
+    registered: {
+        headline: 'Registered',
+        detail: 'These exact bytes were published on photoframes.me, and have not changed since. The registry records only that — who published it, and what they called it, are shown on the photo itself.',
     },
-    signed: {
-        headline: 'Signed',
-        detail: 'The signature is intact and the photo has not been altered since it was signed. The certificate is not issued by a recognised authority, so the signer is self-attested.',
-    },
-    modified: {
-        headline: 'Modified since signing',
-        detail: 'This photo carries Content Credentials, but its pixels no longer match what was signed. It has been edited, re-encoded, or re-saved since.',
-    },
-    none: {
-        headline: 'No Content Credentials',
-        detail: 'This photo carries no provenance information. That is the ordinary case for most photos on the web — it says nothing bad about the image, only that nothing was recorded.',
+    unregistered: {
+        headline: 'Not in the registry',
+        detail: 'No record matches this file. Either it was never published here, or it has been edited, re-encoded, or re-saved since — a registry records one exact sequence of bytes, so it cannot tell those apart.',
     },
     error: {
-        headline: 'Could not read this file',
-        detail: 'The file could not be parsed as an image. Try a JPEG, PNG, or WebP.',
+        headline: 'Could not check this file',
+        detail: 'The registry could not be reached. This says nothing about the photo — try again in a moment.',
     },
 };
 
 /**
- * Lets anyone check a photo's Content Credentials.
+ * Lets anyone check a photo against the provenance registry.
  *
- * The file never leaves the browser — the reader is WebAssembly and parses the
- * bytes in place — which the dialog says out loud, because asking someone to
- * hand over a photo to prove a point about trust deserves an answer up front.
+ * The photo stays on the visitor's machine; what leaves is a SHA-256 of its
+ * bytes, which the registry is queried for. The dialog says this plainly
+ * rather than claiming nothing is sent, because asking someone to hand over a
+ * photo to prove a point about trust deserves an honest answer up front.
  */
 export default function VerifyPhotoDialog({ open, onClose }: VerifyPhotoDialogProps) {
     const [result, setResult] = useState<Provenance | null>(null);
@@ -57,9 +50,9 @@ export default function VerifyPhotoDialog({ open, onClose }: VerifyPhotoDialogPr
         setIsReading(true);
         setResult(null);
         try {
-            // Imported here so the megabyte of WebAssembly only loads for the
-            // visitors who actually open this dialog.
-            const { verifyFile } = await import('../services/c2paVerify');
+            // Imported here so the dialog's code only loads for the visitors
+            // who actually open it.
+            const { verifyFile } = await import('../services/provenanceVerify');
             setResult(await verifyFile(file));
         } finally {
             setIsReading(false);
@@ -108,8 +101,8 @@ export default function VerifyPhotoDialog({ open, onClose }: VerifyPhotoDialogPr
                         mb: 3,
                     }}
                 >
-                    Check whether a photo carries Content Credentials, and whether it has been
-                    altered since. The file is read in your browser — nothing is uploaded.
+                    Check whether a photo was published here, and whether it has changed
+                    since. The photo stays on your device — only its fingerprint is sent.
                 </Typography>
 
                 {result ? (
@@ -146,7 +139,7 @@ export default function VerifyPhotoDialog({ open, onClose }: VerifyPhotoDialogPr
                             <>
                                 <CircularProgress size={24} sx={{ color: colors.text }} />
                                 <Typography sx={{ fontFamily: typography.ui, fontSize: '14px' }}>
-                                    Reading credentials…
+                                    Checking the registry…
                                 </Typography>
                             </>
                         ) : (
@@ -185,7 +178,7 @@ export default function VerifyPhotoDialog({ open, onClose }: VerifyPhotoDialogPr
     );
 }
 
-/** One labelled line of manifest detail. */
+/** One labelled line of registry detail. */
 function Field({ label, value }: { label: string; value: string }) {
     return (
         <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
@@ -211,9 +204,6 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function Result({ provenance, onReset }: { provenance: Provenance; onReset: () => void }) {
     const { headline, detail } = RESULTS[provenance.state];
-    // Only a broken binding is a warning. An unsigned photo is simply unsigned,
-    // and colouring it red would imply an accusation the manifest never makes.
-    const isWarning = provenance.state === 'modified';
 
     return (
         <Box sx={{ border: `1px solid ${colors.borderLight}`, p: 3 }}>
@@ -221,7 +211,7 @@ function Result({ provenance, onReset }: { provenance: Provenance; onReset: () =
                 sx={{
                     fontFamily: typography.headline,
                     fontSize: '20px',
-                    color: isWarning ? colors.danger : colors.text,
+                    color: colors.text,
                     mb: 1,
                 }}
             >
@@ -233,17 +223,14 @@ function Result({ provenance, onReset }: { provenance: Provenance; onReset: () =
                     fontSize: '14px',
                     color: colors.textSecondary,
                     lineHeight: 1.6,
-                    mb: provenance.creator || provenance.signedBy ? 3 : 0,
+                    mb: provenance.registeredAt ? 3 : 0,
                 }}
             >
                 {detail}
             </Typography>
 
-            {provenance.creator && <Field label="Creator" value={provenance.creator} />}
-            {provenance.signedBy && <Field label="Signed by" value={provenance.signedBy} />}
-            {provenance.issuer && <Field label="Certificate" value={provenance.issuer} />}
-            {provenance.signedAt && (
-                <Field label="Signed" value={new Date(provenance.signedAt).toLocaleString()} />
+            {provenance.registeredAt && (
+                <Field label="Registered" value={new Date(provenance.registeredAt).toLocaleString()} />
             )}
 
             <Box sx={{ mt: 3 }}>

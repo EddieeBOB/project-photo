@@ -14,13 +14,15 @@ export const photosTableId: string = import.meta.env.VITE_APPWRITE_PHOTOS_COLLEC
 export const GALLERY_TABLE = 'gallery';
 export const PHOTOS_TABLE = 'photos';
 export const USERS_TABLE = 'users';
+export const PROVENANCE_TABLE = 'provenance';
 
 /** The Appwrite Function that resolves a username to its account email. */
 export const loginResolverFunctionId: string = import.meta.env.VITE_APPWRITE_LOGIN_FN_ID;
 
 /**
- * The Appwrite Function that signs a photo with a C2PA provenance manifest and
- * stores it. It performs the upload itself — the signing key must never reach
- * the browser, and signing has to happen before the bytes land in the bucket.
+ * The Appwrite Function that hashes a stored photo and records it in the
+ * provenance registry. The browser uploads the file itself; this only attests
+ * the hash, which it computes from the stored bytes rather than trusting the
+ * client for it.
  */
-export const signPhotoFunctionId: string = import.meta.env.VITE_APPWRITE_SIGN_PHOTO_FN_ID;
+export const registerPhotoFunctionId: string = import.meta.env.VITE_APPWRITE_REGISTER_FN_ID;

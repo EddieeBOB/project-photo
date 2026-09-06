@@ -1,7 +1,7 @@
 import { Functions, ID, Query, type Models } from 'appwrite';
 
 import { account, client, tablesDB, storage } from '../lib/appwrite';
-import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId, signPhotoFunctionId } from '../lib/config';
+import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId, PROVENANCE_TABLE, registerPhotoFunctionId } from '../lib/config';
 import { ownerPermissions } from '../lib/permissions';
 import { fileToThumbhash } from '../lib/thumbhash';
 import type { Gallery, Photo } from '../types/gallery';
@@ -20,73 +20,98 @@ import { retrieveImageURL, retrieveOriginalImageURL } from './imageUrls';
 /** How many photo rows to pull per request when walking a gallery. */
 const PHOTO_PAGE_SIZE = 100;
 
+/**
+ * Most file ids `register-photo` accepts in one `visibility` call. Mirrors
+ * `MAX_VISIBILITY_BATCH` there, and equals `PHOTO_PAGE_SIZE` so an ordinary
+ * gallery reconciles in a single execution. That is the whole point: Appwrite
+ * rate-limits execution *creation*, not the work inside an execution, so one
+ * call per photo throttles partway through a large gallery and leaves its tail
+ * with a publicly readable registry row.
+ */
+const VISIBILITY_BATCH_SIZE = 100;
+
 const functions = new Functions(client);
 
 /* ------------------------------------------------------------------ */
 /* Publishing                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Base64 payload of a blob, without the `data:` prefix a data URL carries. */
-function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-    });
-}
-
 /**
- * Downscales one image and has the `sign-photo` function store it.
+ * Downscales one image, stores it, and has `register-photo` record its hash.
  *
- * The browser does not write this file itself. A C2PA manifest hashes the bytes
- * it is embedded in, so signing has to happen before the bucket write — and it
- * has to happen server-side, because a signing key shipped to the browser is a
- * key everyone has. The function therefore does the upload, and the id it
- * returns is the one the `photos` row references.
+ * The browser writes the file itself now. Nothing needs to happen to the bytes
+ * before they land in the bucket — the hash is taken from what is stored, by
+ * the function, reading it back out. That is what makes the registry an
+ * attestation rather than a client's word: a browser that could supply its own
+ * hash could register a file it does not own.
  *
- * There is deliberately no unsigned path: if signing fails nothing was stored,
- * so the publish fails rather than quietly keeping a photo without provenance.
+ * There is deliberately no unregistered path. If registration fails the file is
+ * deleted and the publish fails, rather than quietly keeping a photo whose
+ * provenance nothing can confirm.
  *
  * @returns the storage file id
  */
-async function uploadImage(file: File, isPublic: boolean, creator: string): Promise<string> {
+async function uploadImage(file: File, isPublic: boolean, ownerId: string): Promise<string> {
+    // Checked before the upload, not after: without it the first publish on a
+    // fresh deployment uploads the file, then fails on an opaque SDK error
+    // about an empty function id with nothing pointing at the missing variable.
+    if (!registerPhotoFunctionId) {
+        throw new Error(
+            'Photo registration is not configured: set VITE_APPWRITE_REGISTER_FN_ID to the register-photo function id.',
+        );
+    }
+
+    // The bucket enforces these server-side too; failing here just saves a
+    // pointless round trip with a large body.
+    if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        throw new Error('Unsupported file type.');
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+        throw new Error('File exceeds the maximum allowed size.');
+    }
+
+    // The resize re-encodes to WebP, so the picked file's type no longer
+    // describes the bytes being sent. The blob's own type does, and it also
+    // covers the browser that fell back to PNG instead.
+    const resized = await resizeImage(file, UPLOAD_MAX_WIDTH);
+    const uploadType = resized.type || 'image/webp';
+    const name = fileNameForType(file.name, uploadType);
+
+    const stored = await storage.createFile({
+        bucketId,
+        fileId: ID.unique(),
+        file: new File([resized], name, { type: uploadType }),
+        permissions: ownerPermissions(ownerId, isPublic),
+    });
+
     try {
-        // The bucket enforces these server-side too; failing here just saves a
-        // pointless round trip with a large body.
-        if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
-            throw new Error('Unsupported file type.');
-        }
-        if (file.size > MAX_FILE_SIZE_BYTES) {
-            throw new Error('File exceeds the maximum allowed size.');
-        }
-
-        // The resize re-encodes to WebP, so the picked file's type no longer
-        // describes the bytes being sent. The blob's own type does, and it also
-        // covers the browser that fell back to PNG instead.
-        const resized = await resizeImage(file, UPLOAD_MAX_WIDTH);
-        const uploadType = resized.type || 'image/webp';
-
         const execution = await functions.createExecution({
-            functionId: signPhotoFunctionId,
-            body: JSON.stringify({
-                image: await blobToBase64(resized),
-                mimeType: uploadType,
-                name: fileNameForType(file.name, uploadType),
-                isPublic,
-                creator,
-            }),
+            functionId: registerPhotoFunctionId,
+            body: JSON.stringify({ action: 'register', fileId: stored.$id }),
         });
 
         const result = JSON.parse(execution.responseBody || '{}');
-        if (execution.responseStatusCode !== 200 || !result.fileId) {
-            throw new Error(result.error || 'Could not sign and store the photo.');
+        if (execution.responseStatusCode !== 200 || !result.sha256) {
+            throw new Error(result.error || 'Could not register the photo.');
         }
-        return result.fileId;
     } catch (error) {
-        console.error('Error uploading and saving photo:', error);
+        // Nothing references the file yet, and a photo with no provenance is
+        // not what was asked for, so it does not stay.
+        //
+        // The row goes too, because the failure may be a timed-out execution
+        // that nonetheless wrote one. A row nothing can reach still answers
+        // "Registered" for bytes that were never published — and carries
+        // read("any") if the gallery was public.
+        await deleteRegistryRow(stored.$id);
+        try {
+            await storage.deleteFile({ bucketId, fileId: stored.$id });
+        } catch (cleanupError) {
+            console.error(`Failed to clean up ${stored.$id} after a failed registration:`, cleanupError);
+        }
         throw error;
     }
+
+    return stored.$id;
 }
 
 /**
@@ -100,11 +125,10 @@ async function createImage(
     galleryId: string,
     ownerId: string,
     isPublic: boolean,
-    creator: string,
 ): Promise<string | null> {
     if (!photo.file) return null;
 
-    const imageId = await uploadImage(photo.file, isPublic, creator);
+    const imageId = await uploadImage(photo.file, isPublic, ownerId);
 
     try {
         // Hashed from the original rather than the upload: ThumbHash works from a
@@ -134,13 +158,92 @@ async function createImage(
 
         return imageId;
     } catch (error) {
-        // The file is already in the bucket but nothing references it now.
+        // The file is already in the bucket but nothing references it now — and
+        // registration succeeded, so it has a registry row too. `createGallery`
+        // only records the file id once this function returns, so `rollbackGallery`
+        // will never see it: if the row is not removed here it is removed nowhere.
+        await deleteRegistryRow(imageId);
         try {
             await storage.deleteFile({ bucketId, fileId: imageId });
         } catch (cleanupError) {
             console.error(`Failed to clean up storage file ${imageId} after DB error:`, cleanupError);
         }
         throw error;
+    }
+}
+
+/**
+ * Best-effort removal of a photo's registry row. Never throws.
+ *
+ * The row id is the storage file id, so no lookup is needed. A row left behind
+ * would keep answering for a photo that no longer exists.
+ */
+async function deleteRegistryRow(imageId: string) {
+    try {
+        await tablesDB.deleteRow({ databaseId, tableId: PROVENANCE_TABLE, rowId: imageId });
+    } catch (error) {
+        console.warn(`Failed to delete provenance row ${imageId}:`, error);
+    }
+}
+
+/**
+ * Brings a gallery's registry rows back in step with its photos' visibility.
+ *
+ * Registry rows carry no client `update` permission — that is what keeps an
+ * owner from rewriting the hash inside one — so the browser cannot re-permission
+ * a row itself. Only the function, holding the API key, can.
+ *
+ * Sent in batches rather than one call per photo: Appwrite rate-limits
+ * execution creation tightly, so a hundred calls throttle partway through and
+ * the tail of a large gallery keeps its `read("any")` row — exactly the leak
+ * this exists to close. One execution per hundred photos does not.
+ *
+ * The function reads each file's *own* permissions to decide the row's, rather
+ * than believing a caller who says a photo is public, so this must run after
+ * the files themselves have been re-permissioned. A file whose own update
+ * failed keeps its row consistent with what the file actually exposes.
+ *
+ * Best-effort and never throws: the gallery's visibility is already written by
+ * the time this runs, and failing the toggle over a registry row would be worse
+ * than logging it.
+ */
+async function reconcileRegistryVisibility(imageIds: string[]) {
+    if (imageIds.length === 0) return;
+    if (!registerPhotoFunctionId) {
+        console.warn('VITE_APPWRITE_REGISTER_FN_ID is not set; provenance row visibility was not updated.');
+        return;
+    }
+
+    for (let start = 0; start < imageIds.length; start += VISIBILITY_BATCH_SIZE) {
+        const batch = imageIds.slice(start, start + VISIBILITY_BATCH_SIZE);
+        try {
+            const execution = await functions.createExecution({
+                functionId: registerPhotoFunctionId,
+                body: JSON.stringify({ action: 'visibility', fileIds: batch }),
+            });
+
+            let result: { ok?: boolean; updated?: number; skipped?: number; error?: string } = {};
+            try {
+                result = JSON.parse(execution.responseBody || '{}');
+            } catch { /* malformed or empty body; fall through and warn on status alone */ }
+
+            // createExecution resolves even when the function itself returns a
+            // non-2xx status, so success has to be read from the response, not
+            // just the absence of a thrown error — the same reason uploadImage
+            // checks responseStatusCode rather than trusting the await.
+            if (execution.responseStatusCode !== 200 || !result.ok) {
+                console.warn(
+                    `Failed to update provenance visibility for ${batch.length} photo(s): ` +
+                    `status ${execution.responseStatusCode}${result.error ? `, ${result.error}` : ''}`,
+                );
+            } else if (result.skipped) {
+                console.warn(
+                    `Provenance visibility skipped ${result.skipped} of ${batch.length} photo(s).`,
+                );
+            }
+        } catch (error) {
+            console.warn(`Failed to update provenance visibility for ${batch.length} photo(s):`, error);
+        }
     }
 }
 
@@ -152,6 +255,7 @@ async function rollbackGallery(galleryId: string, photoRowIds: string[], fileIds
         } catch { /* already gone, or never created */ }
     }
     for (const fileId of fileIds) {
+        await deleteRegistryRow(fileId);
         try {
             await storage.deleteFile({ bucketId, fileId });
         } catch { /* already gone, or never created */ }
@@ -184,9 +288,7 @@ export async function createGallery(
     // Derive the owner from the authenticated session rather than trusting a
     // client-supplied id. This prevents a tampered client from attributing a
     // gallery to another user.
-    // The display name rides along as the manifest's creator, so it is read
-    // here rather than once per photo.
-    const { $id: ownerId, name: creator } = await account.get();
+    const { $id: ownerId } = await account.get();
 
     const galleryId = ID.unique();
     const photoRowIds: string[] = [];
@@ -209,7 +311,7 @@ export async function createGallery(
             const photoRowId = ID.unique();
             photoRowIds.push(photoRowId);
 
-            const imageId = await createImage(photo, photoRowId, galleryId, ownerId, isPublic, creator);
+            const imageId = await createImage(photo, photoRowId, galleryId, ownerId, isPublic);
             if (imageId) uploadedFileIds.push(imageId);
 
             onProgress?.(index + 1, gallery.photos.length);
@@ -270,6 +372,7 @@ export async function deletePhoto(photoId: string) {
         });
 
         if (photo?.imageId) {
+            await deleteRegistryRow(photo.imageId);
             try {
                 await storage.deleteFile({ bucketId, fileId: photo.imageId });
             } catch (error) {
@@ -291,6 +394,7 @@ export async function deleteGallery(galleryId: string) {
 
         await Promise.all(photos.map(async (photo) => {
             if (photo.imageId) {
+                await deleteRegistryRow(photo.imageId);
                 try {
                     await storage.deleteFile({ bucketId, fileId: photo.imageId });
                 } catch (error) {
@@ -354,6 +458,12 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
                 }
             }
         }));
+
+        // After the files, never before: the function derives each row's public
+        // read from the file's own permissions rather than from this request.
+        await reconcileRegistryVisibility(
+            photos.map((photo) => photo.imageId).filter((id): id is string => Boolean(id)),
+        );
     } catch (error) {
         console.error('Failed to update gallery visibility:', error);
         throw error;

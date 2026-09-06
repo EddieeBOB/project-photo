@@ -24,7 +24,6 @@
     "e2e:mailpit:down": "docker compose -f tests/e2e/2fa/docker/docker-compose.mailpit.yml down"
   },
   "dependencies": {
-    "@contentauth/c2pa-web": "^0.14.4",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "9.0.1",

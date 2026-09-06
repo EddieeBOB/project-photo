@@ -44,9 +44,17 @@ export const PROJECT = env.VITE_APPWRITE_PROJECT_ID;
 export const DATABASE = env.VITE_APPWRITE_DATABASE_ID;
 export const BUCKET = env.VITE_APPWRITE_BUCKET_ID;
 export const PHOTOS = env.VITE_APPWRITE_PHOTOS_COLLECTION_ID || 'photos';
+export const PROVENANCE = 'provenance';
+export const REGISTER_FN = env.VITE_APPWRITE_REGISTER_FN_ID;
 
-/** Whether `.env` is present and complete enough to run the live specs. */
-export const APPWRITE_CONFIGURED = Boolean(ENDPOINT && PROJECT && DATABASE && BUCKET);
+/**
+ * Whether `.env` is present and complete enough to run the live specs.
+ *
+ * The register function id is part of that: without it a publish throws before
+ * it uploads anything, and the upload spec should skip rather than fail while
+ * `.env` is still half-migrated from `VITE_APPWRITE_SIGN_PHOTO_FN_ID`.
+ */
+export const APPWRITE_CONFIGURED = Boolean(ENDPOINT && PROJECT && DATABASE && BUCKET && REGISTER_FN);
 
 /**
  * Stable fixture account shared with the Vitest integration suite. Reused across
@@ -101,8 +109,9 @@ export async function fixtureSession() {
 
 /**
  * Delete every gallery owned by the fixture user whose title contains `marker`,
- * including each photo row and its uploaded storage file. Idempotent and
- * best-effort: never throws, so it's safe to call from teardown.
+ * including each photo row, its uploaded storage file, and the `provenance` row
+ * recorded for that file. Idempotent and best-effort: never throws, so it's safe
+ * to call from teardown.
  */
 export async function cleanupGalleriesByTitle(marker: string): Promise<number> {
     if (!APPWRITE_CONFIGURED) return 0;
@@ -128,6 +137,11 @@ export async function cleanupGalleriesByTitle(marker: string): Promise<number> {
 
             for (const photo of gallery.photos || []) {
                 if (photo.imageId) {
+                    // The registry row is keyed on the file id, and the owner
+                    // holds `delete` on it. Without this, every run leaves a
+                    // permanent row in the live project answering for bytes
+                    // that no longer exist.
+                    try { await db.deleteRow({ databaseId: DATABASE!, tableId: PROVENANCE, rowId: photo.imageId }); } catch { /* gone */ }
                     try { await storage.deleteFile({ bucketId: BUCKET!, fileId: photo.imageId }); } catch { /* gone */ }
                 }
                 try { await db.deleteRow({ databaseId: DATABASE!, tableId: PHOTOS, rowId: photo.$id }); } catch { /* gone */ }
