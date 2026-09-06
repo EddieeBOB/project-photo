@@ -219,6 +219,37 @@ test('reports a file that does not exist as 404', async (t) => {
     assert.equal(sent.status, 404);
 });
 
+test('rejects JSON bodies that are not objects', async () => {
+    for (const body of [null, [], 'register', 42, false]) {
+        const sent = await invoke({
+            headers: request().headers,
+            bodyRaw: JSON.stringify(body),
+        });
+        assert.equal(sent.status, 400);
+        assert.equal(sent.body.error, 'Invalid request body.');
+    }
+});
+
+test('rejects non-string file ids instead of coercing them into lookups', async () => {
+    for (const fileId of [123, {}, ['file1'], { toString: null }]) {
+        const sent = await invoke(request({ fileId }));
+        assert.equal(sent.status, 400);
+        assert.equal(sent.body.error, 'fileId is required.');
+    }
+});
+
+test('validates the request before checking server configuration', async () => {
+    const sent = await invoke(request({ action: 'unknown' }), { APPWRITE_DATABASE_ID: '' });
+    assert.equal(sent.status, 400);
+    assert.equal(sent.body.error, 'Unknown action.');
+});
+
+test('reports missing server configuration for a valid request', async () => {
+    const sent = await invoke(request(), { APPWRITE_DATABASE_ID: '' });
+    assert.equal(sent.status, 500);
+    assert.equal(sent.body.error, 'Registration is unavailable.');
+});
+
 test('reports a lookup failure that is not a 404 as a server error', async (t) => {
     // A 503 from the bucket is not the caller's fault and must not read as
     // "no such file", which would be indistinguishable from a deleted photo.

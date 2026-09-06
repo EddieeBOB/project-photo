@@ -3,6 +3,10 @@
 Hashes a photo that is already in the bucket and records the digest in the
 `provenance` table, then keeps those rows' visibility in step with the photos'.
 
+`src/main.js` validates requests and configures the Appwrite clients.
+`src/registry.js` handles registration, visibility, hashing, and permissions.
+Run the function's tests with `npm test` from this directory.
+
 ## Why the hash is computed here
 
 Appwrite permissions are per-row, not per-column, so the hash cannot sit on the
@@ -40,6 +44,9 @@ directly — no execution per verification.
 
 Anything that escapes as an unexpected error is logged and reported as a flat
 `500 Operation failed.` rather than leaking its message.
+
+The body must be a JSON object. Actions and file ids must be strings. Visibility
+batches ignore non-string or blank ids and count duplicate ids once.
 
 ### Ownership
 

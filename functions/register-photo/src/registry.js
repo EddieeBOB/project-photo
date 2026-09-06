@@ -1,26 +1,71 @@
 import { createHash } from 'node:crypto';
 
-/**
- * Hashing and permission rules, kept free of Appwrite and HTTP concerns so they
- * can be exercised on their own: bytes in, digest out.
- */
-
-/** SHA-256 of exactly these bytes, lowercase hex. The registry's only claim. */
 export function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-/**
- * Permissions for a registry row. Mirrors `registryPermissions` in
- * src/lib/permissions.ts, which cannot be imported here — that module is built
- * against the browser SDK and this function runs on the server one.
- *
- * There is deliberately no `update` for any role. Appwrite permissions are
- * per-row rather than per-column, so an owner who could update this row could
- * rewrite the hash inside it.
- */
+// No update grant: owners must not be able to rewrite their stored hash.
 export function registryPermissions(ownerId, isPublic) {
   const perms = [`read("user:${ownerId}")`, `delete("user:${ownerId}")`];
   if (isPublic) perms.push('read("any")');
   return perms;
+}
+
+// Only these errors carry messages that are safe to return to the caller.
+const fail = (status, message) => Object.assign(new Error(message), { status });
+
+export function createRegistry({ storage, databases, bucketId, databaseId, tableId, userId, error }) {
+  async function permissionsFor(fileId) {
+    const file = await storage.getFile(bucketId, fileId).catch((e) => {
+      if (e.code === 404) throw fail(404, 'Unknown file.');
+      throw fail(500, 'Could not look up the file.');
+    });
+    const permissions = file.$permissions || [];
+
+    // Public read access does not prove ownership; the delete grant does.
+    if (!permissions.includes(`delete("user:${userId}")`)) {
+      throw fail(403, 'You do not own this file.');
+    }
+    return registryPermissions(userId, permissions.includes('read("any")'));
+  }
+
+  async function register(fileId) {
+    const permissions = await permissionsFor(fileId);
+    const bytes = await storage.getFileDownload(bucketId, fileId);
+    const digest = sha256(Buffer.from(bytes));
+
+    try {
+      await databases.createDocument(
+        databaseId,
+        tableId,
+        fileId,
+        { imageId: fileId, sha256: digest, registeredAt: new Date().toISOString() },
+        permissions,
+      );
+      return digest;
+    } catch (e) {
+      if (e.code !== 409) throw e;
+      // Re-registration returns the original digest without overwriting it.
+      const existing = await databases.getDocument(databaseId, tableId, fileId);
+      return existing.sha256;
+    }
+  }
+
+  async function visibility(fileIds) {
+    const results = await Promise.all(fileIds.map(async (fileId) => {
+      try {
+        const permissions = await permissionsFor(fileId);
+        await databases.updateDocument(databaseId, tableId, fileId, {}, permissions);
+        return true;
+      } catch (e) {
+        // A stale or unauthorized file must not abort the rest of the batch.
+        error(`visibility skipped ${fileId}: ${e.message}`);
+        return false;
+      }
+    }));
+    const updated = results.filter(Boolean).length;
+    return { ok: true, updated, skipped: results.length - updated };
+  }
+
+  return { register, visibility };
 }
