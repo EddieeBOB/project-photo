@@ -69,7 +69,6 @@ function PhotoCard({
                     src={photo.src}
                     alt={photo.title || 'Untitled photograph'}
                     thumbhash={photo.thumbhash}
-                    crossOrigin="anonymous"
                     loading="lazy"
                     width={1200}
                     height={675}

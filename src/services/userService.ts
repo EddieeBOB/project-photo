@@ -25,7 +25,7 @@ export interface UserSearchResult {
 }
 
 /** Public-safe columns for a profile page, plus the galleries hanging off it. */
-const PUBLIC_PROFILE_FIELDS = ['username', 'gallery.*', 'gallery.photos.*'];
+const PROFILE_FIELDS = ['username', 'gallery.*', 'gallery.photos.*'];
 
 /** How many suggestions the search dropdown shows. */
 const MAX_SEARCH_RESULTS = 8;
@@ -44,7 +44,7 @@ export async function fetchUserGallery(userId: string) {
         tableId: USERS_TABLE,
         queries: [
             Query.equal('$id', userId),
-            Query.select(['*', 'gallery.*', 'gallery.photos.*']),
+            Query.select(PROFILE_FIELDS),
         ],
     });
     return response.rows[0];
@@ -66,27 +66,23 @@ export async function fetchUserGalleryByUsername(username: string) {
             tableId: USERS_TABLE,
             queries: [
                 Query.equal('username', username),
-                Query.select(PUBLIC_PROFILE_FIELDS),
+                Query.select(PROFILE_FIELDS),
             ],
         });
 
-        if (exactMatch.rows?.length > 0) {
-            return exactMatch.rows[0];
-        }
+        if (exactMatch.rows.length > 0) return exactMatch.rows[0];
 
         const candidates = await tablesDB.listRows<UserRow>({
             databaseId,
             tableId: USERS_TABLE,
             queries: [
                 Query.limit(100),
-                Query.select(PUBLIC_PROFILE_FIELDS),
+                Query.select(PROFILE_FIELDS),
             ],
         });
 
         const target = username.trim().toLowerCase();
-        const match = candidates.rows.find((row) => (row.username || '').trim().toLowerCase() === target);
-
-        return match || null;
+        return candidates.rows.find((row) => (row.username || '').trim().toLowerCase() === target) ?? null;
     } catch (error) {
         console.error('Failed to fetch user by username:', error);
         throw error;
@@ -120,7 +116,7 @@ async function fetchPublicGalleryOwnerIds(userIds: string[]): Promise<Set<string
         ],
     });
 
-    const ownerIds = (response.rows || [])
+    const ownerIds = response.rows
         // The owner arrives as a bare id, or as an expanded row depending on
         // how the SDK resolves the relationship.
         .map((row) => (typeof row.users === 'string' ? row.users : row.users?.$id))
@@ -156,7 +152,7 @@ export async function searchUsersByUsername(prefix: string): Promise<UserSearchR
             ],
         });
 
-        const candidates = response.rows || [];
+        const candidates = response.rows;
         if (candidates.length === 0) return [];
 
         const publicOwnerIds = await fetchPublicGalleryOwnerIds(candidates.map((row) => row.$id));

@@ -1,9 +1,20 @@
 import { account, ID, tablesDB } from "../lib/appwrite";
+import { databaseId, USERS_TABLE } from "../lib/config";
 import { ownerPermissions } from "../lib/permissions";
 import { sendVerificationEmail } from "./authService";
 
+/** Creates the profile row that pairs with an Auth account. */
+function createUserRow(userId: string, username: string) {
+    return tablesDB.createRow({
+        databaseId,
+        tableId: USERS_TABLE,
+        rowId: userId,
+        data: { username },
+        permissions: ownerPermissions(userId, true),
+    });
+}
+
 export async function handleSignUp(username: string, email: string, password: string) {
-    const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
     const userId = ID.unique();
 
     // Step 1: Create the Appwrite Auth account
@@ -27,27 +38,15 @@ export async function handleSignUp(username: string, email: string, password: st
         throw new Error("Account created, but auto-login failed. Please log in manually.", { cause: sessionError });
     }
 
-    // Step 3: Create the user document in the database
+    // Step 3: Create the user document, retrying once because transient network
+    // failures are common and the Auth account already exists by this point.
     try {
-        await tablesDB.createRow({
-            databaseId,
-            tableId: 'users',
-            rowId: userId,
-            data: { username },
-            permissions: ownerPermissions(userId, true)
-        });
+        await createUserRow(userId, username);
     } catch (dbError) {
-        console.error("User document creation failed:", dbError);
+        console.error("User document creation failed, retrying:", dbError);
 
-        // Retry once because transient network issues are common
         try {
-            await tablesDB.createRow({
-                databaseId,
-                tableId: 'users',
-                rowId: userId,
-                data: { username },
-                permissions: ownerPermissions(userId, true)
-            });
+            await createUserRow(userId, username);
         } catch (retryError) {
             console.error(
                 `ORPHANED ACCOUNT DETECTED: userId=${userId}. ` +

@@ -9,8 +9,7 @@
 export const databaseId: string = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 export const bucketId: string = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 
-/** Table ids. The photos table is configurable; the rest are stable names. */
-export const photosTableId: string = import.meta.env.VITE_APPWRITE_PHOTOS_COLLECTION_ID;
+/** Table ids. */
 export const GALLERY_TABLE = 'gallery';
 export const PHOTOS_TABLE = 'photos';
 export const USERS_TABLE = 'users';

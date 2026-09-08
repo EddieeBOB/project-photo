@@ -132,7 +132,6 @@ function EditablePhotoCard({ photo, onChange, onMetadataChange, onRemove }: Edit
                 <img
                     src={photo.src}
                     alt={photo.title || 'Photo to upload'}
-                    crossOrigin="anonymous"
                     loading="lazy"
                     width={1200}
                     height={675}

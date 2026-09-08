@@ -1,7 +1,7 @@
-import { Functions, ID, Query, type Models } from 'appwrite';
+import { ID, Query, type Models } from 'appwrite';
 
-import { account, client, tablesDB, storage } from '../lib/appwrite';
-import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, photosTableId, PROVENANCE_TABLE, registerPhotoFunctionId } from '../lib/config';
+import { account, functions, tablesDB, storage } from '../lib/appwrite';
+import { bucketId, databaseId, GALLERY_TABLE, PHOTOS_TABLE, PROVENANCE_TABLE, registerPhotoFunctionId } from '../lib/config';
 import { ownerPermissions } from '../lib/permissions';
 import { fileToThumbhash } from '../lib/thumbhash';
 import type { Gallery, Photo } from '../types/gallery';
@@ -30,7 +30,28 @@ const PHOTO_PAGE_SIZE = 100;
  */
 const VISIBILITY_BATCH_SIZE = 100;
 
-const functions = new Functions(client);
+/**
+ * How many photos to re-permission or tear down at once. Appwrite rate-limits
+ * per-request, so fanning a large gallery out all at once trades a bounded wait
+ * for throttled writes partway through.
+ */
+const WRITE_CONCURRENCY = 10;
+
+/** Applies `task` to every item, at most {@link WRITE_CONCURRENCY} at a time. */
+async function forEachLimited<T>(items: T[], task: (item: T) => Promise<void>): Promise<void> {
+    for (let start = 0; start < items.length; start += WRITE_CONCURRENCY) {
+        await Promise.all(items.slice(start, start + WRITE_CONCURRENCY).map(task));
+    }
+}
+
+/** Parses a function's response body, treating a malformed one as empty. */
+function parseExecutionBody<T>(responseBody: string): T | Record<string, never> {
+    try {
+        return JSON.parse(responseBody || '{}');
+    } catch {
+        return {};
+    }
+}
 
 /* ------------------------------------------------------------------ */
 /* Publishing                                                          */
@@ -81,7 +102,7 @@ async function uploadImage(file: File, isPublic: boolean, ownerId: string): Prom
             body: JSON.stringify({ action: 'register', fileId: stored.$id }),
         });
 
-        const result = JSON.parse(execution.responseBody || '{}');
+        const result = parseExecutionBody<{ sha256?: string; error?: string }>(execution.responseBody);
         if (execution.responseStatusCode !== 200 || !result.sha256) {
             throw new Error(result.error || 'Could not register the photo.');
         }
@@ -93,12 +114,7 @@ async function uploadImage(file: File, isPublic: boolean, ownerId: string): Prom
         // that nonetheless wrote one. A row nothing can reach still answers
         // "Registered" for bytes that were never published — and carries
         // read("any") if the gallery was public.
-        await deleteRegistryRow(stored.$id);
-        try {
-            await storage.deleteFile({ bucketId, fileId: stored.$id });
-        } catch (cleanupError) {
-            console.error(`Failed to clean up ${stored.$id} after a failed registration:`, cleanupError);
-        }
+        await deleteStoredPhoto(stored.$id);
         throw error;
     }
 
@@ -153,12 +169,7 @@ async function createImage(
         // registration succeeded, so it has a registry row too. `createGallery`
         // only records the file id once this function returns, so `rollbackGallery`
         // will never see it: if the row is not removed here it is removed nowhere.
-        await deleteRegistryRow(imageId);
-        try {
-            await storage.deleteFile({ bucketId, fileId: imageId });
-        } catch (cleanupError) {
-            console.error(`Failed to clean up storage file ${imageId} after DB error:`, cleanupError);
-        }
+        await deleteStoredPhoto(imageId);
         throw error;
     }
 }
@@ -174,6 +185,19 @@ async function deleteRegistryRow(imageId: string) {
         await tablesDB.deleteRow({ databaseId, tableId: PROVENANCE_TABLE, rowId: imageId });
     } catch (error) {
         console.warn(`Failed to delete provenance row ${imageId}:`, error);
+    }
+}
+
+/**
+ * Best-effort removal of a stored photo — its registry row, then its file.
+ * Never throws: every caller is already unwinding a failure or a deletion.
+ */
+async function deleteStoredPhoto(imageId: string) {
+    await deleteRegistryRow(imageId);
+    try {
+        await storage.deleteFile({ bucketId, fileId: imageId });
+    } catch (error) {
+        console.warn(`Failed to delete storage file ${imageId}:`, error);
     }
 }
 
@@ -213,10 +237,7 @@ async function reconcileRegistryVisibility(imageIds: string[]) {
                 body: JSON.stringify({ action: 'visibility', fileIds: batch }),
             });
 
-            let result: { ok?: boolean; updated?: number; skipped?: number; error?: string } = {};
-            try {
-                result = JSON.parse(execution.responseBody || '{}');
-            } catch { /* malformed or empty body; fall through and warn on status alone */ }
+            const result = parseExecutionBody<{ ok?: boolean; skipped?: number; error?: string }>(execution.responseBody);
 
             // createExecution resolves even when the function itself returns a
             // non-2xx status, so success has to be read from the response, not
@@ -245,12 +266,7 @@ async function rollbackGallery(galleryId: string, photoRowIds: string[], fileIds
             await tablesDB.deleteRow({ databaseId, tableId: PHOTOS_TABLE, rowId });
         } catch { /* already gone, or never created */ }
     }
-    for (const fileId of fileIds) {
-        await deleteRegistryRow(fileId);
-        try {
-            await storage.deleteFile({ bucketId, fileId });
-        } catch { /* already gone, or never created */ }
-    }
+    await forEachLimited(fileIds, deleteStoredPhoto);
     try {
         await tablesDB.deleteRow({ databaseId, tableId: GALLERY_TABLE, rowId: galleryId });
     } catch { /* already gone, or never created */ }
@@ -300,10 +316,14 @@ export async function createGallery(
 
         for (const [index, photo] of gallery.photos.entries()) {
             const photoRowId = ID.unique();
-            photoRowIds.push(photoRowId);
 
+            // A photo with no file creates no row, so its id must not be linked
+            // into the gallery below — the relationship would dangle.
             const imageId = await createImage(photo, photoRowId, galleryId, ownerId, isPublic);
-            if (imageId) uploadedFileIds.push(imageId);
+            if (imageId) {
+                photoRowIds.push(photoRowId);
+                uploadedFileIds.push(imageId);
+            }
 
             onProgress?.(index + 1, gallery.photos.length);
         }
@@ -325,17 +345,25 @@ export async function createGallery(
 /* Deleting and re-permissioning                                       */
 /* ------------------------------------------------------------------ */
 
-/** Every photo row belonging to a gallery, paged through in full. */
-async function listGalleryPhotos(galleryId: string): Promise<Models.DefaultRow[]> {
-    const photos: Models.DefaultRow[] = [];
+/** A photo row as needed by the delete and re-permission paths. */
+type PhotoFileRow = Models.Row & { imageId?: string };
+
+/**
+ * Every photo row belonging to a gallery, paged through in full. Only the row
+ * id and its file id are selected — the callers rewrite or delete rows, and
+ * pulling titles and descriptions for that is wasted payload.
+ */
+async function listGalleryPhotos(galleryId: string): Promise<PhotoFileRow[]> {
+    const photos: PhotoFileRow[] = [];
     let offset = 0;
 
     for (;;) {
-        const response = await tablesDB.listRows({
+        const response = await tablesDB.listRows<PhotoFileRow>({
             databaseId,
             tableId: PHOTOS_TABLE,
             queries: [
                 Query.equal('gallery', galleryId),
+                Query.select(['$id', 'imageId']),
                 Query.limit(PHOTO_PAGE_SIZE),
                 Query.offset(offset),
             ],
@@ -363,12 +391,7 @@ export async function deletePhoto(photoId: string) {
         });
 
         if (photo?.imageId) {
-            await deleteRegistryRow(photo.imageId);
-            try {
-                await storage.deleteFile({ bucketId, fileId: photo.imageId });
-            } catch (error) {
-                console.warn(`Failed to delete storage file ${photo.imageId}:`, error);
-            }
+            await deleteStoredPhoto(photo.imageId);
         }
 
         await tablesDB.deleteRow({ databaseId, tableId: PHOTOS_TABLE, rowId: photoId });
@@ -383,17 +406,10 @@ export async function deleteGallery(galleryId: string) {
     try {
         const photos = await listGalleryPhotos(galleryId);
 
-        await Promise.all(photos.map(async (photo) => {
-            if (photo.imageId) {
-                await deleteRegistryRow(photo.imageId);
-                try {
-                    await storage.deleteFile({ bucketId, fileId: photo.imageId });
-                } catch (error) {
-                    console.warn(`[deleteGallery] Failed to delete storage file ${photo.imageId}:`, error);
-                }
-            }
+        await forEachLimited(photos, async (photo) => {
+            if (photo.imageId) await deleteStoredPhoto(photo.imageId);
             await tablesDB.deleteRow({ databaseId, tableId: PHOTOS_TABLE, rowId: photo.$id });
-        }));
+        });
 
         await tablesDB.deleteRow({ databaseId, tableId: GALLERY_TABLE, rowId: galleryId });
     } catch (error) {
@@ -428,7 +444,7 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
 
         const photos = await listGalleryPhotos(galleryId);
 
-        await Promise.all(photos.map(async (photo) => {
+        await forEachLimited(photos, async (photo) => {
             try {
                 await tablesDB.updateRow({
                     databaseId,
@@ -448,7 +464,7 @@ export async function updateGalleryVisibility(galleryId: string, isPublic: boole
                     console.warn(`Failed to update permissions for file ${photo.imageId}:`, error);
                 }
             }
-        }));
+        });
 
         // After the files, never before: the function derives each row's public
         // read from the file's own permissions rather than from this request.
@@ -533,7 +549,7 @@ export async function fetchFeaturedArtist() {
     try {
         const response = await tablesDB.listRows({
             databaseId,
-            tableId: photosTableId,
+            tableId: PHOTOS_TABLE,
             queries: [
                 Query.equal('isFrontPage', true),
                 Query.limit(1),

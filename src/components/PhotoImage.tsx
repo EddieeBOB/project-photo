@@ -21,7 +21,6 @@ export interface PhotoImageProps {
     height?: number;
     loading?: 'eager' | 'lazy';
     fetchPriority?: 'high' | 'low' | 'auto';
-    crossOrigin?: 'anonymous' | 'use-credentials';
     /** Applied to the wrapper, which fills its container by default. */
     style?: CSSProperties;
 }
@@ -48,7 +47,6 @@ export default function PhotoImage({
     height,
     loading,
     fetchPriority,
-    crossOrigin,
     style,
 }: PhotoImageProps) {
     const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
@@ -99,7 +97,13 @@ export default function PhotoImage({
                 height={height}
                 loading={loading}
                 fetchPriority={fetchPriority}
-                crossOrigin={crossOrigin}
+                // Deliberately no `crossorigin`: it puts the request in
+                // anonymous credentials mode, which drops the Appwrite session
+                // cookie on the cross-origin hop to the API. A photo readable
+                // only by its owner then comes back 404 rather than 403 —
+                // Appwrite filters unauthorised files out of existence — so the
+                // whole gallery renders as empty boxes. Nothing here reads the
+                // pixels back, so there is nothing to gain by tainting less.
                 onLoad={markLoaded}
                 // A photo that fails to load should look no different than it does
                 // without a placeholder behind it.

@@ -53,8 +53,8 @@ export async function processFiles(files: File[]): Promise<CarouselPhoto[]> {
         ALLOWED_IMAGE_TYPES.includes(file.type) && file.size > 0 && file.size <= MAX_FILE_SIZE_BYTES
     );
 
-    return Promise.all(imageFiles.map(async (file, index) => ({
-        id: `${Date.now()}-${index}-${Math.random().toString(36).substring(2, 11)}`,
+    return Promise.all(imageFiles.map(async (file) => ({
+        id: crypto.randomUUID(),
         src: URL.createObjectURL(file),
         title: stripFileExtension(file.name),
         description: '',
@@ -137,45 +137,31 @@ function getResizer() {
  * re-encodes it as WebP. Images already narrower than `width` are re-encoded
  * but not upscaled.
  *
+ * Decoding goes through `createImageBitmap`, which happens off the main thread
+ * and so does not stall the page on a large photo. `from-image` is asked for
+ * explicitly so an EXIF-rotated phone photo lands the right way up, matching
+ * what an `<img>` would have shown.
+ *
  * @returns the resized image as a Blob — WebP, or PNG on a browser that cannot
  *          encode WebP. Read its `type` rather than assuming either.
  */
 export async function resizeImage(file: File, width: number): Promise<Blob> {
-    const resizer = await getResizer();
+    const [resizer, bitmap] = await Promise.all([
+        getResizer(),
+        createImageBitmap(file, { imageOrientation: 'from-image' }),
+    ]);
 
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.src = objectUrl;
+    try {
+        if (!bitmap.width) throw new Error('Image decoded with 0 width');
 
-        img.onload = async () => {
-            try {
-                if (!img.width) {
-                    reject(new Error('Image loaded with 0 width'));
-                    return;
-                }
+        const targetWidth = Math.min(bitmap.width, width);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = Math.round(bitmap.height * (targetWidth / bitmap.width));
 
-                const targetWidth = Math.min(img.width, width);
-                const targetHeight = Math.round(img.height * (targetWidth / img.width));
-
-                const canvas = document.createElement('canvas');
-                canvas.width = targetWidth;
-                canvas.height = targetHeight;
-
-                // A JPEG source has no alpha channel to carry through the
-                // resize, and skipping it is measurably faster.
-                await resizer.resize(img, canvas, { alpha: file.type !== 'image/jpeg' } as Parameters<typeof resizer.resize>[2]);
-                resolve(await resizer.toBlob(canvas, ENCODE_TYPE, 0.85));
-            } catch (error) {
-                reject(error);
-            } finally {
-                URL.revokeObjectURL(objectUrl);
-            }
-        };
-
-        img.onerror = (error) => {
-            URL.revokeObjectURL(objectUrl);
-            reject(error);
-        };
-    });
+        await resizer.resize(bitmap, canvas);
+        return await resizer.toBlob(canvas, ENCODE_TYPE, 0.85);
+    } finally {
+        bitmap.close();
+    }
 }
