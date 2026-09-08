@@ -23,7 +23,9 @@ email/password flow, so **MFA and session persistence are unchanged**.
 
 ## Dynamic key scopes
 
-The function runs with `documents.read`, `users.read`, and `sessions.write`.
+The function runs with `rows.read`, `users.read`, and `sessions.write`.
+This version uses `node-appwrite` 29 and `TablesDB.listRows` for Appwrite 2.0.
+Replace the old `documents.read` scope with `rows.read` before deploying it.
 Appwrite injects a per-execution key as the `x-appwrite-key` header, so there is
 no long-lived key to store or rotate.
 
@@ -44,8 +46,8 @@ are optional overrides; the code falls back to the real ids.
    attempt off the user's session limit; the browser opens the real one.
 4. Return the email.
 
-Every failure path returns the same `401` — unknown username and wrong password
-are indistinguishable to the caller.
+Unknown username and wrong password return the same `401`.
+A failed database lookup returns a safe `500` response.
 
 An exact username match is tried first, falling back to a case-insensitive scan.
 That fallback pages only the first 100 rows, so it stops finding people beyond
@@ -64,3 +66,8 @@ reads the function id from `VITE_APPWRITE_LOGIN_FN_ID`.
 Password verification uses the admin key, which bypasses per-IP rate limits.
 Appwrite still rate-limits function executions; add a CAPTCHA or per-username
 attempt counter in front of step 3 if you want stricter protection.
+
+## Tests
+
+Run `npm test` in this directory. The offline tests exercise the real SDK request
+builders with a fake HTTP transport; they create no accounts or sessions.

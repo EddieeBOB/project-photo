@@ -198,6 +198,7 @@ erDiagram
 All project docs live in **[docs/](./docs/README.md)**:
 
 - [Appwrite backend & security model](./docs/appwrite-backend.md)
+- [Appwrite 2.0 SDK update & deployment](./docs/appwrite-2-upgrade.md)
 - [`login-resolver` function](./functions/login-resolver/README.md)
 - [Testing overview](./tests/README.md) · [2FA E2E](./tests/e2e/2fa/README.md)
 ---
@@ -207,4 +208,3 @@ All project docs live in **[docs/](./docs/README.md)**:
 Planned:
 - [x] thumbhash pre-rendering for photos
 - [ ] new gallery page from [suped-project-photo](https://github.com/EddieeBOB/suped-project-photo)
-

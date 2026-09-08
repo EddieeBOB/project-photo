@@ -14,9 +14,9 @@ export function registryPermissions(ownerId, isPublic) {
 // Only these errors carry messages that are safe to return to the caller.
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
-export function createRegistry({ storage, databases, bucketId, databaseId, tableId, userId, error }) {
+export function createRegistry({ storage, tablesDB, bucketId, databaseId, tableId, userId, error }) {
   async function permissionsFor(fileId) {
-    const file = await storage.getFile(bucketId, fileId).catch((e) => {
+    const file = await storage.getFile({ bucketId, fileId }).catch((e) => {
       if (e.code === 404) throw fail(404, 'Unknown file.');
       throw fail(500, 'Could not look up the file.');
     });
@@ -31,25 +31,25 @@ export function createRegistry({ storage, databases, bucketId, databaseId, table
 
   async function register(fileId) {
     const permissions = await permissionsFor(fileId);
-    const bytes = await storage.getFileDownload(bucketId, fileId);
+    const bytes = await storage.getFileDownload({ bucketId, fileId });
     const digest = sha256(Buffer.from(bytes));
 
     try {
       // No timestamp of our own: Appwrite stamps the row's `$createdAt`, which
       // neither the caller nor this function can set, and which a re-registration
       // leaves where it was.
-      await databases.createDocument(
+      await tablesDB.createRow({
         databaseId,
         tableId,
-        fileId,
-        { imageId: fileId, sha256: digest },
+        rowId: fileId,
+        data: { imageId: fileId, sha256: digest },
         permissions,
-      );
+      });
       return digest;
     } catch (e) {
       if (e.code !== 409) throw e;
       // Re-registration returns the original digest without overwriting it.
-      const existing = await databases.getDocument(databaseId, tableId, fileId);
+      const existing = await tablesDB.getRow({ databaseId, tableId, rowId: fileId });
       return existing.sha256;
     }
   }
@@ -58,7 +58,7 @@ export function createRegistry({ storage, databases, bucketId, databaseId, table
     const results = await Promise.all(fileIds.map(async (fileId) => {
       try {
         const permissions = await permissionsFor(fileId);
-        await databases.updateDocument(databaseId, tableId, fileId, {}, permissions);
+        await tablesDB.updateRow({ databaseId, tableId, rowId: fileId, permissions });
         return true;
       } catch (e) {
         // A stale or unauthorized file must not abort the rest of the batch.

@@ -1,4 +1,4 @@
-import { Client, Account, Users, Databases, Query } from 'node-appwrite';
+import { Client, Account, Users, TablesDB, Query } from 'node-appwrite';
 
 /**
  * login-resolver — lets users sign in with a *username* without ever exposing
@@ -24,7 +24,7 @@ import { Client, Account, Users, Databases, Query } from 'node-appwrite';
  *   401 { "error": "Invalid username or password." }   unknown user OR wrong password
  *
  * Dynamic API key scopes granted to this function:
- *   documents.read, users.read, sessions.write
+ *   rows.read, users.read, sessions.write
  *
  * NOTE on abuse: password verification here uses the admin key, which bypasses
  * per-IP rate limits. Appwrite still rate-limits function executions, but if you
@@ -57,25 +57,28 @@ export default async ({ req, res, log, error }) => {
   const usersTableId = process.env.APPWRITE_USERS_TABLE_ID || 'users';
 
   const admin = new Client().setEndpoint(endpoint).setProject(project).setKey(apiKey);
-  const databases = new Databases(admin);
+  const tablesDB = new TablesDB(admin);
   const users = new Users(admin);
 
   // ---- 1. resolve username -> userId (row.$id === Auth userId) ---------
   let userId = null;
   try {
-    const exact = await databases.listDocuments(databaseId, usersTableId, [
-      Query.equal('username', username),
-      Query.limit(1),
-    ]);
+    const exact = await tablesDB.listRows({
+      databaseId,
+      tableId: usersTableId,
+      queries: [Query.equal('username', username), Query.limit(1)],
+    });
     if (exact.total > 0) {
-      userId = exact.documents[0].$id;
+      userId = exact.rows[0].$id;
     } else {
       // Case/whitespace-insensitive fallback, mirroring the app's old logic.
       const target = username.toLowerCase();
-      const scan = await databases.listDocuments(databaseId, usersTableId, [
-        Query.limit(100),
-      ]);
-      const match = scan.documents.find(
+      const scan = await tablesDB.listRows({
+        databaseId,
+        tableId: usersTableId,
+        queries: [Query.limit(100)],
+      });
+      const match = scan.rows.find(
         (d) => String(d.username || '').trim().toLowerCase() === target,
       );
       if (match) userId = match.$id;
@@ -89,7 +92,7 @@ export default async ({ req, res, log, error }) => {
   // ---- 2. userId -> email (from Auth; only returned after the pw check) -
   let email;
   try {
-    email = (await users.get(userId)).email;
+    email = (await users.get({ userId })).email;
   } catch (e) {
     error(`user fetch failed for ${userId}: ${e.message}`);
     return reject();
@@ -104,7 +107,7 @@ export default async ({ req, res, log, error }) => {
   //   MFA-aware session itself.
   let session;
   try {
-    session = await new Account(admin).createEmailPasswordSession(email, password);
+    session = await new Account(admin).createEmailPasswordSession({ email, password });
   } catch {
     return reject();
   }
@@ -113,7 +116,7 @@ export default async ({ req, res, log, error }) => {
       .setEndpoint(endpoint)
       .setProject(project)
       .setSession(session.secret);
-    await new Account(sessionClient).deleteSession('current');
+    await new Account(sessionClient).deleteSession({ sessionId: 'current' });
   } catch (e) {
     // Non-fatal: an unreferenced session will expire on its own.
     error(`temp session cleanup failed: ${e.message}`);

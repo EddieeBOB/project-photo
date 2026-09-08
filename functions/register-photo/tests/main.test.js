@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Databases, Storage } from 'node-appwrite';
+import { Client, TablesDB, Storage } from 'node-appwrite';
 
 import handler from '../src/main.js';
 import { sha256 } from '../src/registry.js';
@@ -9,7 +9,7 @@ import { sha256 } from '../src/registry.js';
  * The authorization surface: every 400/401/403/404/409/500 decision the handler
  * makes, plus what it actually writes when it says yes.
  *
- * The handler builds its own `Storage` and `Databases` from the request's API
+ * The handler builds its own `Storage` and `TablesDB` from the request's API
  * key, so there is nothing to inject. The stand-in backend therefore replaces
  * the two SDK prototypes for the length of a test and puts them back after —
  * the handler stays exactly the code that ships.
@@ -79,12 +79,13 @@ function backend({ files = {}, rows = {}, failLookupWith, failDownloadWith } = {
     const saved = {
         getFile: Storage.prototype.getFile,
         getFileDownload: Storage.prototype.getFileDownload,
-        createDocument: Databases.prototype.createDocument,
-        getDocument: Databases.prototype.getDocument,
-        updateDocument: Databases.prototype.updateDocument,
+        createRow: TablesDB.prototype.createRow,
+        getRow: TablesDB.prototype.getRow,
+        updateRow: TablesDB.prototype.updateRow,
     };
 
-    Storage.prototype.getFile = async (_bucketId, fileId) => {
+    Storage.prototype.getFile = async ({ bucketId, fileId }) => {
+        assert.equal(bucketId, 'photos');
         if (failLookupWith) throw failLookupWith;
         if (!files[fileId]) throw appwriteError(404, 'File with the requested ID could not be found.');
         return { $id: fileId, $permissions: files[fileId] };
@@ -94,16 +95,22 @@ function backend({ files = {}, rows = {}, failLookupWith, failDownloadWith } = {
         // The real SDK hands back an ArrayBuffer, not a Buffer.
         return BYTES.buffer.slice(BYTES.byteOffset, BYTES.byteOffset + BYTES.byteLength);
     };
-    Databases.prototype.createDocument = async (_db, _table, rowId, data, permissions) => {
+    TablesDB.prototype.createRow = async ({ databaseId, tableId, rowId, data, permissions }) => {
+        assert.equal(databaseId, 'db');
+        assert.equal(tableId, 'provenance');
         if (rows[rowId]) throw appwriteError(409, 'Document with the requested ID already exists.');
         rows[rowId] = { $id: rowId, $createdAt: new Date().toISOString(), $permissions: permissions, ...data };
         return rows[rowId];
     };
-    Databases.prototype.getDocument = async (_db, _table, rowId) => {
+    TablesDB.prototype.getRow = async ({ databaseId, tableId, rowId }) => {
+        assert.equal(databaseId, 'db');
+        assert.equal(tableId, 'provenance');
         if (!rows[rowId]) throw appwriteError(404, 'Document with the requested ID could not be found.');
         return rows[rowId];
     };
-    Databases.prototype.updateDocument = async (_db, _table, rowId, data, permissions) => {
+    TablesDB.prototype.updateRow = async ({ databaseId, tableId, rowId, data, permissions }) => {
+        assert.equal(databaseId, 'db');
+        assert.equal(tableId, 'provenance');
         if (!rows[rowId]) throw appwriteError(404, 'Document with the requested ID could not be found.');
         rows[rowId] = { ...rows[rowId], ...data, $permissions: permissions };
         return rows[rowId];
@@ -116,10 +123,10 @@ function backend({ files = {}, rows = {}, failLookupWith, failDownloadWith } = {
                 getFile: saved.getFile,
                 getFileDownload: saved.getFileDownload,
             });
-            Object.assign(Databases.prototype, {
-                createDocument: saved.createDocument,
-                getDocument: saved.getDocument,
-                updateDocument: saved.updateDocument,
+            Object.assign(TablesDB.prototype, {
+                createRow: saved.createRow,
+                getRow: saved.getRow,
+                updateRow: saved.updateRow,
             });
         },
     };
@@ -359,7 +366,7 @@ test('a collision whose row cannot then be read is a server error', async (t) =>
     t.after(fake.restore);
     // Collide on create, then vanish before the read — the one case where the
     // caller genuinely cannot be told a digest.
-    Databases.prototype.createDocument = async () => {
+    TablesDB.prototype.createRow = async () => {
         throw appwriteError(409, 'Document with the requested ID already exists.');
     };
 
@@ -502,4 +509,35 @@ test('an unauthenticated visibility call is refused before any lookup', async (t
 
     assert.equal(sent.status, 401);
     assert.deepEqual(fake.rows.f1.$permissions, ['read("any")']);
+});
+
+test('the SDK sends registration and visibility to the TablesDB row endpoints', async (t) => {
+    const calls = [];
+    t.mock.method(Client.prototype, 'call', async (method, url, _headers, data) => {
+        calls.push({ method, path: url.pathname, data });
+        if (url.pathname.endsWith('/download')) return BYTES;
+        if (url.pathname.includes('/storage/')) return { $permissions: PRIVATE_FILE };
+        return {};
+    });
+
+    const registered = await invoke(request());
+    const updated = await invoke(visibility(['file1']));
+
+    assert.deepEqual(registered.body, { sha256: DIGEST });
+    assert.deepEqual(updated.body, { ok: true, updated: 1, skipped: 0 });
+    assert.deepEqual(calls.map(({ method, path }) => [method, path]), [
+        ['get', '/v1/storage/buckets/photos/files/file1'],
+        ['get', '/v1/storage/buckets/photos/files/file1/download'],
+        ['post', '/v1/tablesdb/db/tables/provenance/rows'],
+        ['get', '/v1/storage/buckets/photos/files/file1'],
+        ['patch', '/v1/tablesdb/db/tables/provenance/rows/file1'],
+    ]);
+    assert.deepEqual(calls[2].data, {
+        rowId: 'file1',
+        data: { imageId: 'file1', sha256: DIGEST },
+        permissions: ['read("user:owner")', 'delete("user:owner")'],
+    });
+    assert.deepEqual(calls[4].data, {
+        permissions: ['read("user:owner")', 'delete("user:owner")'],
+    });
 });

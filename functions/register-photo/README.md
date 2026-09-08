@@ -5,6 +5,7 @@ Hashes a photo that is already in the bucket and records the digest in the
 
 `src/main.js` validates requests and configures the Appwrite clients.
 `src/registry.js` handles registration, visibility, hashing, and permissions.
+Uses `node-appwrite` 29 with the Appwrite 2.0 `TablesDB` row API.
 Run the function's tests with `npm test` from this directory.
 
 ## Why the hash is computed here
@@ -79,7 +80,7 @@ execution. It is batched because Appwrite rate-limits execution *creation*, not
 the work inside an execution: one call per photo throttles partway through a large
 gallery and leaves the rest of its rows publicly readable. Larger galleries are
 chunked by the caller. The cap also bounds one execution at 200 SDK round trips —
-a `getFile` and an `updateDocument` each — which stays inside the default timeout.
+a `getFile` and an `updateRow` each — which stays inside the default timeout.
 
 ### Idempotence
 
@@ -101,7 +102,10 @@ a warning: the site inlines every `VITE_` value into the browser bundle, so a
 secret must never be added under one of these names. This function needs no
 secret — its API key is the per-execution one Appwrite injects.
 
-Dynamic API key scopes: `files.read`, `documents.read`, `documents.write`.
+Dynamic API key scopes: `files.read`, `rows.read`, `rows.write`.
+Before deploying this version, replace the old `documents.read` and
+`documents.write` scopes with these row scopes in the function settings.
+The existing database, table, row IDs, and permissions stay the same.
 
 ### The `provenance` table
 

@@ -40,7 +40,7 @@ An inventory of what is implemented in project-photo, organized by full-stack la
 ## Server-side logic (serverless)
 
 - `login-resolver` function — validates credentials server-side and returns only the caller's own email
-- Scoped execution permissions on that function (`documents.read`, `users.read`, `sessions.write`)
+- Scoped execution permissions on that function (`rows.read`, `users.read`, `sessions.write`)
 
 ## Database layer
 

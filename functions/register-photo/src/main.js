@@ -1,4 +1,4 @@
-import { Client, Databases, Storage } from 'node-appwrite';
+import { Client, TablesDB, Storage } from 'node-appwrite';
 
 import { createRegistry } from './registry.js';
 
@@ -65,7 +65,7 @@ export default async ({ req, res, error }) => {
     // Give the photo operations their clients, resource IDs, and caller identity.
     const registry = createRegistry({
       storage: new Storage(admin),
-      databases: new Databases(admin),
+      tablesDB: new TablesDB(admin),
       databaseId,
       bucketId,
       tableId: process.env.VITE_APPWRITE_PROVENANCE_TABLE_ID || 'provenance',

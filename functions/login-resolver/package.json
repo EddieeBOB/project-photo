@@ -4,7 +4,10 @@
   "description": "Resolves username -> account email server-side (after password verification) so users can log in by username without exposing emails.",
   "type": "module",
   "main": "src/main.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
   "dependencies": {
-    "node-appwrite": "^17.2.0"
+    "node-appwrite": "29.0.0"
   }
 }

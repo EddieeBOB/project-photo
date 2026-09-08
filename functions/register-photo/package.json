@@ -8,6 +8,6 @@
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
-    "node-appwrite": "^17.2.0"
+    "node-appwrite": "29.0.0"
   }
 }
