@@ -9,7 +9,7 @@ their creative workspace - with all authorization enforced server-side by
 Appwrite.
 
 ### 
-I think I will rewrite this in a fullstack sever sided rendering layout. 
+I think I will rewrite this in a fullstack sever sided rendering layout. It will also take a while to rollout all the features that could be implement with new Appwrite 2.0
 
 ---
 ### UI/UX Design
