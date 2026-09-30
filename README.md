@@ -8,6 +8,9 @@ distraction-free space to showcase portfolios, curate galleries, and manage
 their creative workspace - with all authorization enforced server-side by
 Appwrite.
 
+### 
+I think I will rewrite this in a fullstack sever sided rendering layout. 
+
 ---
 ### UI/UX Design
 
